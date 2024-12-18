@@ -1,2 +1,1 @@
-# mern-cliente
-nombre aún por discutir
+# Magio Taglibro
