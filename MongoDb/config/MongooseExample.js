@@ -1,16 +1,32 @@
 const mongoose = require('mongoose');
 
-// Definir el esquema
-const usuarioSchema = new mongoose.Schema({
+/**
+ * Esquema de usuario para MongoDB.
+ * @typedef {Object} UsuarioSchema
+ * @property {string} nombre - El nombre del usuario.
+ * @property {string} email - El email del usuario (requerido y único).
+ * @property {number} edad - La edad del usuario.
+ */
+
+/**
+ * Modelo de usuario basado en el esquema.
+ * @type {import('mongoose').Model<UsuarioSchema>}
+ */
+const Usuario = mongoose.model('Usuario', new mongoose.Schema({
     nombre: String,
     email: { type: String, required: true, unique: true },
     edad: Number
-});
+}));
 
-// Crear el modelo
-const Usuario = mongoose.model('Usuario', usuarioSchema);
-
-// CREATE - Crear y añadir un usuario
+/**
+ * Crea y añade un nuevo usuario a la base de datos.
+ * @async
+ * @param {string} nombre - El nombre del usuario.
+ * @param {string} email - El email del usuario.
+ * @param {number} edad - La edad del usuario.
+ * @returns {Promise<UsuarioSchema>} El usuario creado y guardado.
+ * @throws {Error} Si hay un error al crear el usuario.
+ */
 async function crearUsuario(nombre, email, edad) {
     try {
         const nuevoUsuario = new Usuario({ nombre, email, edad });
@@ -23,7 +39,12 @@ async function crearUsuario(nombre, email, edad) {
     }
 }
 
-// READ - Obtener todos los usuarios
+/**
+ * Obtiene todos los usuarios de la base de datos.
+ * @async
+ * @returns {Promise<UsuarioSchema[]>} Array de todos los usuarios.
+ * @throws {Error} Si hay un error al obtener los usuarios.
+ */
 async function obtenerTodosUsuarios() {
     try {
         const usuarios = await Usuario.find();
@@ -35,7 +56,13 @@ async function obtenerTodosUsuarios() {
     }
 }
 
-// READ - Obtener un usuario por email
+/**
+ * Obtiene un usuario por su email.
+ * @async
+ * @param {string} email - El email del usuario a buscar.
+ * @returns {Promise<UsuarioSchema|null>} El usuario encontrado o null si no existe.
+ * @throws {Error} Si hay un error al obtener el usuario.
+ */
 async function obtenerUsuarioPorEmail(email) {
     try {
         const usuario = await Usuario.findOne({ email: email });
@@ -46,32 +73,21 @@ async function obtenerUsuarioPorEmail(email) {
         throw error;
     }
 }
-/*
-* mongoose nos ofrece estas opciones de queries
-*
-    Model.deleteMany()
-    Model.deleteOne()
-    Model.find()
-    Model.findById()
-    Model.findByIdAndDelete()
-    Model.findByIdAndRemove()
-    Model.findByIdAndUpdate()
-    Model.findOne()
-    Model.findOneAndDelete()
-    Model.findOneAndReplace()
-    Model.findOneAndUpdate()
-    Model.replaceOne()
-    Model.updateMany()
-    Model.updateOne()
-* */
 
-// UPDATE - Actualizar un usuario
+/**
+ * Actualiza un usuario existente por su email.
+ * @async
+ * @param {string} email - El email del usuario a actualizar.
+ * @param {Partial<UsuarioSchema>} datosActualizados - Los datos a actualizar.
+ * @returns {Promise<UsuarioSchema|null>} El usuario actualizado o null si no se encuentra.
+ * @throws {Error} Si hay un error al actualizar el usuario.
+ */
 async function actualizarUsuario(email, datosActualizados) {
     try {
         const usuarioActualizado = await Usuario.findOneAndUpdate(
             { email: email },
             datosActualizados,
-            { new: true } // Devuelve el documento actualizado
+            { new: true }
         );
         console.log('Usuario actualizado:', usuarioActualizado);
         return usuarioActualizado;
@@ -81,7 +97,13 @@ async function actualizarUsuario(email, datosActualizados) {
     }
 }
 
-// DELETE - Eliminar un usuario
+/**
+ * Elimina un usuario por su email.
+ * @async
+ * @param {string} email - El email del usuario a eliminar.
+ * @returns {Promise<UsuarioSchema|null>} El usuario eliminado o null si no se encuentra.
+ * @throws {Error} Si hay un error al eliminar el usuario.
+ */
 async function eliminarUsuario(email) {
     try {
         const usuarioEliminado = await Usuario.findOneAndDelete({ email: email });
@@ -93,22 +115,17 @@ async function eliminarUsuario(email) {
     }
 }
 
-// Ejemplos de uso
+/**
+ * Ejecuta ejemplos de operaciones CRUD.
+ * @async
+ * @throws {Error} Si hay un error en alguna de las operaciones CRUD.
+ */
 async function ejemplosCRUD() {
     try {
-        // Crear
         await crearUsuario('Juan Pérez', 'juan@example.com', 30);
-
-        // Leer todos
         await obtenerTodosUsuarios();
-
-        // Leer uno
         await obtenerUsuarioPorEmail('juan@example.com');
-
-        // Actualizar
         await actualizarUsuario('juan@example.com', { edad: 31 });
-
-        // Eliminar
         await eliminarUsuario('juan@example.com');
     } catch (error) {
         console.error('Error en operaciones CRUD:', error);
