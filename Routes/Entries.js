@@ -1,5 +1,6 @@
 const express = require('express');
 const Entrada = require('../Models/entrie');
+const User = require('../Models/user');
 
 const router = express.Router();
 
@@ -13,7 +14,7 @@ router.get("/", async (req, res) => {
 });
 
 // Crear una nueva entrada
-router.post("/", async (req, res) => {
+router.post("/new", async (req, res) => {
     const { titulo, contenido, autor_id } = req.body;
 
     // Validar los datos recibidos
@@ -23,7 +24,7 @@ router.post("/", async (req, res) => {
 
     // Verificar si el autor existe
     try {
-        const usuarioExistente = await Usuario.findById(autor_id);
+        const usuarioExistente = await User.findById(autor_id);
         if (!usuarioExistente) {
             return res.status(404).json({ message: "El usuario no existe." });
         }
