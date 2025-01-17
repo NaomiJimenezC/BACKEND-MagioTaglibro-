@@ -32,8 +32,18 @@ const entradaSchema = new Schema({
         required: true
     },
     contenido: {
-        type: String,
-        required: true
+        palabras_clave: {
+            type: String,
+            required: true
+        },
+        eventos_clave: {
+            type: String,
+            required: true
+        },
+        resumen: {
+            type: String,
+            required: true
+        }
     },
     fecha_creacion: {
         type: Date,
