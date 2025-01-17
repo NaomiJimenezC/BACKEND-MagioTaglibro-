@@ -50,7 +50,25 @@ router.post("/register", async (req, res) => {
 
     await newUser.save();
 
-    res.status(201).json({ message: "Usuario registrado con éxito" });
+    // Generar token después del registro
+    const token = jwt.sign(
+      { id: newUser._id, username: newUser.username },
+      process.env.JWT_SECRET, // Usando la variable desde .env
+      { expiresIn: "1h" }
+    );
+
+    // Devolver la misma respuesta que en el login
+    res.status(201).json({
+      message: "Usuario registrado con éxito",
+      token,
+      user: {
+        id: newUser._id,
+        username: newUser.username,
+        email: newUser.email,
+        birthDate: newUser.birthDate,
+        createdAt: newUser.createdAt,
+      }
+    });
   } catch (error) {
     console.error("Error al registrar usuario:", error);
     res.status(500).json({ message: "Error al registrar usuario", error });
@@ -88,7 +106,18 @@ router.post("/login", async (req, res) => {
       { expiresIn: "1h" }
     );
 
-    res.json({ message: "Inicio de sesión exitoso", token });
+    // Aquí se agregan los datos completos del usuario en la respuesta
+    res.json({
+      message: "Inicio de sesión exitoso",
+      token,
+      user: {
+        id: user._id,       // Se incluye el ID del usuario
+        username: user.username,
+        email: user.email,
+        birthDate: user.birthDate,
+        createdAt: user.createdAt,
+      }
+    });
   } catch (error) {
     console.error("Error al iniciar sesión:", error);
     res.status(500).json({ message: "Error al iniciar sesión", error });

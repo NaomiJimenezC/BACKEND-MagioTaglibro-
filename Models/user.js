@@ -3,12 +3,10 @@ const { Schema } = mongoose;
 const validator = require('validator'); // Para validar el correo electrónico
 
 const userSchema = new Schema({
-  username
-  : { 
+  username: { 
     type: String, 
     required: true, 
-    unique: true,  // Asegura que el username
-    //  sea único
+    unique: true,  // Asegura que el username sea único
   },
   email: { 
     type: String, 
