@@ -1,6 +1,5 @@
 // Server.js
 const express = require('express');
-const mongoose = require('./db');  
 const authRoutes = require('./Routes/Auth');
 const entriesRoutes = require('./Routes/Entries');
 const bodyParser = require('body-parser');
@@ -14,7 +13,7 @@ app.use(bodyParser.json());
 app.use(cors());
 
 // Rutas
-app.use('/api/entries',entriesRoutes)
+app.use('/api/entries',entriesRoutes);
 app.use('/api/users', authRoutes);
 
 // Inicia el servidor

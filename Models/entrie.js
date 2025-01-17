@@ -2,9 +2,6 @@ const mongoose = require('../db');
 const { Schema } = mongoose;
 const validator = require('validator');
 
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
-
 const entradaSchema = new Schema({
     titulo: {
         type: String,

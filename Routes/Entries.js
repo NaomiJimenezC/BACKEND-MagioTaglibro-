@@ -1,10 +1,9 @@
-import express from "express";
-
-const router = express.Router();
+const express = require('express');
 const Entrada = require('../Models/entrie');
 
-//recovery all entries
-router.get("/entries", async (req, res) => {
+const router = express.Router();
+
+router.get("/", async (req, res) => {
     try {
         const entries = await Entrada.find({});
         res.json(entries);
@@ -12,3 +11,5 @@ router.get("/entries", async (req, res) => {
         res.status(500).json({ message: "Error al recuperar las entradas", error: error.message });
     }
 });
+
+module.exports = router;
