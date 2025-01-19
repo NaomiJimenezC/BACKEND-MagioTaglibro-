@@ -16,15 +16,24 @@ router.get("/:username", async (req, res) => {
     }
 });
 
-//Recuperar una entrada específica
-router.get("/:username/:id", async (req,res) => {
-    try{ //TODO: revisar esto para corregirlo
-        const {username, id} = req.params;ç
-        const entries = await Entrada.find({_id: id})
-    } catch(error){
-        res.status(500).json({message: "Error al recuperar la entrada",error: error.message})
+router.get("/:username/:id", async (req, res) => {
+    try {
+        const { username, id } = req.params;
+        const entrada = await Entrada.findOne({ _id: id, autor_username: username });
+
+        if (!entrada) {
+            return res.status(404).json({ message: "Entrada no encontrada" });
+        }
+
+        res.json(entrada);
+    } catch (error) {
+        if (error.kind === 'ObjectId') {
+            return res.status(400).json({ message: "ID de entrada inválido" });
+        }
+        res.status(500).json({ message: "Error al recuperar la entrada", error: error.message });
     }
 });
+
 // Crear una nueva entrada
 router.post("/new", async (req, res) => {
     const { titulo, contenido, autor_username } = req.body;
