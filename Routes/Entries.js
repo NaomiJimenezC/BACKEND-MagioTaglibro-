@@ -4,43 +4,65 @@ const User = require('../Models/user');
 
 const router = express.Router();
 
-router.get("/", async (req, res) => {
+
+//Recuperar todas las entradas del usuario
+router.get("/:username", async (req, res) => {
     try {
-        const entries = await Entrada.find({});
+        const { username } = req.params;
+        const entries = await Entrada.find({ autor_username: username });
         res.json(entries);
     } catch (error) {
         res.status(500).json({ message: "Error al recuperar las entradas", error: error.message });
     }
 });
 
-// Crear una nueva entrada
+router.get("/:username/:id", async (req, res) => {
+    try {
+        const { username, id } = req.params;
+        const entrada = await Entrada.findOne({ _id: id, autor_username: username });
+
+        if (!entrada) {
+            return res.status(404).json({ message: "Entrada no encontrada" });
+        }
+
+        res.json(entrada);
+    } catch (error) {
+        if (error.kind === 'ObjectId') {
+            return res.status(400).json({ message: "ID de entrada inválido" });
+        }
+        res.status(500).json({ message: "Error al recuperar la entrada", error: error.message });
+    }
+});
+
 router.post("/new", async (req, res) => {
-    const { titulo, contenido, autor_id } = req.body;
+    const { titulo, contenido, autor_username } = req.body;
 
     // Validar los datos recibidos
-    if (!titulo || !contenido || !autor_id) {
-        return res.status(400).json({ message: "Título, contenido y autor_id son requeridos." });
+    if (!titulo || !contenido || !autor_username) {
+        return res.status(400).json({ message: "Título, contenido y autor_username son requeridos." });
     }
 
-    // Verificar si el autor existe
     try {
-        const usuarioExistente = await User.findById(autor_id);
+        // Verificar si el autor existe
+        const usuarioExistente = await User.findOne({ username: autor_username });
         if (!usuarioExistente) {
             return res.status(404).json({ message: "El usuario no existe." });
         }
 
-        const nuevaEntrada = new Entrada({
-            titulo,
-            contenido,
-            autor_id,  // Usar ObjectId aquí para referenciar al usuario existente
-        });
+        // Buscar y actualizar la entrada, o crear una nueva si no existe
+        const entradaActualizada = await Entrada.findOneAndUpdate(
+            { titulo, autor_username },
+            { contenido },
+            { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
+        );
 
-        const savedEntry = await nuevaEntrada.save();
-        res.status(201).json(savedEntry);
+        const mensaje = entradaActualizada.isNew ? "Entrada creada" : "Entrada actualizada";
+        res.status(201).json({ message: mensaje, entrada: entradaActualizada });
 
     } catch (error) {
-        res.status(500).json({ message: "Error al guardar la entrada", error: error.message });
+        res.status(500).json({ message: "Error al guardar/actualizar la entrada", error: error.message });
     }
 });
+
 
 module.exports = router;
