@@ -34,7 +34,6 @@ router.get("/:username/:id", async (req, res) => {
     }
 });
 
-// Crear una nueva entrada
 router.post("/new", async (req, res) => {
     const { titulo, contenido, autor_username } = req.body;
 
@@ -43,24 +42,25 @@ router.post("/new", async (req, res) => {
         return res.status(400).json({ message: "Título, contenido y autor_username son requeridos." });
     }
 
-    // Verificar si el autor existe
     try {
+        // Verificar si el autor existe
         const usuarioExistente = await User.findOne({ username: autor_username });
         if (!usuarioExistente) {
             return res.status(404).json({ message: "El usuario no existe." });
         }
 
-        const nuevaEntrada = new Entrada({
-            titulo,
-            contenido,
-            autor_username,
-        });
+        // Buscar y actualizar la entrada, o crear una nueva si no existe
+        const entradaActualizada = await Entrada.findOneAndUpdate(
+            { titulo, autor_username },
+            { contenido },
+            { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
+        );
 
-        const savedEntry = await nuevaEntrada.save();
-        res.status(201).json(savedEntry);
+        const mensaje = entradaActualizada.isNew ? "Entrada creada" : "Entrada actualizada";
+        res.status(201).json({ message: mensaje, entrada: entradaActualizada });
 
     } catch (error) {
-        res.status(500).json({ message: "Error al guardar la entrada", error: error.message });
+        res.status(500).json({ message: "Error al guardar/actualizar la entrada", error: error.message });
     }
 });
 
