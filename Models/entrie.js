@@ -1,6 +1,5 @@
 const mongoose = require('../db');
 const { Schema } = mongoose;
-const validator = require('validator');
 
 const entradaSchema = new Schema({
     titulo: {
@@ -22,11 +21,15 @@ const entradaSchema = new Schema({
         }
     },
     fecha_creacion: {
-        type: Date,
-        default: Date.now
+        type: String,
+        default: () => new Date().toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        })
     },
-    autor_id: {
-        type: Schema.Types.ObjectId,
+    autor_username: {
+        type: String,
         ref: 'Usuario',
         required: true
     },
@@ -36,12 +39,16 @@ const entradaSchema = new Schema({
     }],
     chat: {
         fecha_creacion: {
-            type: Date,
-            default: Date.now
+            type: String,
+            default: () => new Date().toLocaleDateString('es-ES', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            })
         },
         mensajes: [{
-            autor_id: {
-                type: Schema.Types.ObjectId,
+            autor_username: {
+                type: String,
                 ref: 'Usuario',
                 required: true
             },
@@ -49,10 +56,12 @@ const entradaSchema = new Schema({
                 type: String,
                 required: true
             },
-            fecha_envio: {
-                type: Date,
-                default: Date.now
-            }
+            type: Date,
+            default: () => new Date().toLocaleDateString('es-ES', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            })
         }]
     }
 });
