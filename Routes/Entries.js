@@ -9,6 +9,12 @@ const router = express.Router();
 router.get("/:username", async (req, res) => {
     try {
         const { username } = req.params;
+
+        const usuarioExistente = await User.findOne({ userName: username });
+        if (!usuarioExistente) {
+            return res.status(404).json({ message: "El usuario no existe." });
+        }
+
         const entries = await Entrada.find({ autor_username: username });
         res.json(entries);
     } catch (error) {
