@@ -30,12 +30,12 @@ const entradaSchema = new Schema({
     },
     autor_username: {
         type: String,
-        ref: 'Usuario',
+        ref: 'User',
         required: true
     },
     compartido_con: [{
-        type: Schema.Types.ObjectId,
-        ref: 'Usuario'
+        type: String,
+        ref: 'User'
     }],
     chat: {
         fecha_creacion: {
@@ -49,7 +49,7 @@ const entradaSchema = new Schema({
         mensajes: [{
             autor_username: {
                 type: String,
-                ref: 'Usuario',
+                ref: 'User',
                 required: true
             },
             contenido: {
