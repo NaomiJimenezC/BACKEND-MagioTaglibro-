@@ -44,7 +44,7 @@ router.post("/new", async (req, res) => {
 
     try {
         // Verificar si el autor existe
-        const usuarioExistente = await User.findOne({ username: autor_username });
+        const usuarioExistente = await User.findOne({ userName: autor_username });
         if (!usuarioExistente) {
             return res.status(404).json({ message: "El usuario no existe." });
         }
