@@ -18,8 +18,12 @@ const userSchema = new Schema({
     },
   },
   birthDate: { 
-    type: Date, 
-    required: true, 
+    type: String,
+        default: () => new Date().toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        })
   },
   password: { 
     type: String, 
@@ -27,8 +31,12 @@ const userSchema = new Schema({
     minlength: [6, 'La contraseña debe tener al menos 6 caracteres'], // Asegura longitud mínima de contraseña
   },
   createdAt: { 
-    type: Date, 
-    default: Date.now, 
+    type: String,
+        default: () => new Date().toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        })
   },
 });
 
