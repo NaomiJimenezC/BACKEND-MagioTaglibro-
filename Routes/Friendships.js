@@ -1,82 +1,100 @@
 const express = require('express');
 const router = express.Router();
-const Friend = require('../models/friends'); // Supongamos que tienes un modelo Friend
-const User = require('../models/user'); // Supongamos que tienes un modelo User
+const Friendship = require('../models/friendship');
+const User = require('../models/user');
 
-// Obtener solicitudes pendientes, solicitudes entrantes, amigos y usuarios bloqueados
+// Obtener todas las amistades relacionadas con el usuario
 router.get('/friends', async (req, res) => {
   try {
-    const userId = req.query.userId; // Supongamos que envías el userId como parámetro
-    const user = await User.findById(userId).populate('friends pendingRequests incomingRequests blockedUsers');
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    const userId = req.query.userId;
 
-    res.json({
-      friends: user.friends,
-      pendingRequests: user.pendingRequests,
-      incomingRequests: user.incomingRequests,
-      blockedUsers: user.blockedUsers,
-    });
+    const friendships = await Friendship.find({
+      $or: [{ requester: userId }, { recipient: userId }]
+    }).populate('requester recipient', 'username email');
+
+    const response = {
+      friends: friendships.filter((f) => f.status === 'accepted'),
+      pendingRequests: friendships.filter((f) => f.status === 'pending' && f.requester.toString() === userId),
+      incomingRequests: friendships.filter((f) => f.status === 'pending' && f.recipient.toString() === userId),
+      blockedUsers: friendships.filter((f) => f.status === 'blocked'),
+    };
+
+    res.json(response);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching data', error });
+    res.status(500).json({ message: 'Error fetching friends data', error });
   }
 });
 
-// Enviar solicitud de amistad
 router.post('/friends/request', async (req, res) => {
-  try {
-    const { userId, friendId } = req.body;
-
-    // Agregar a la lista de solicitudes pendientes del usuario objetivo
-    const friend = await User.findById(friendId);
-    if (!friend) return res.status(404).json({ message: 'User not found' });
-
-    if (!friend.incomingRequests.includes(userId)) {
-      friend.incomingRequests.push(userId);
-      await friend.save();
+    try {
+      const { userId, friendId } = req.body;
+  
+      // Verificar si ya existe una relación entre estos usuarios
+      const existingFriendship = await Friendship.findOne({
+        $or: [
+          { requester: userId, recipient: friendId },
+          { requester: friendId, recipient: userId },
+        ],
+      });
+  
+      if (existingFriendship) {
+        return res.status(400).json({ message: 'Friendship already exists' });
+      }
+  
+      // Crear una nueva solicitud
+      const newFriendship = new Friendship({ requester: userId, recipient: friendId });
+      await newFriendship.save();
+  
+      res.json({ message: 'Friend request sent' });
+    } catch (error) {
+      res.status(500).json({ message: 'Error sending friend request', error });
     }
+  });
+  
 
-    res.json({ message: 'Friend request sent' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error sending friend request', error });
-  }
-});
-
-// Aceptar solicitud de amistad
-router.post('/friends/accept', async (req, res) => {
-  try {
-    const { userId, friendId } = req.body;
-
-    const user = await User.findById(userId);
-    const friend = await User.findById(friendId);
-
-    if (!user || !friend) return res.status(404).json({ message: 'User not found' });
-
-    // Agregar a amigos y eliminar de solicitudes entrantes
-    user.friends.push(friendId);
-    friend.friends.push(userId);
-
-    user.incomingRequests = user.incomingRequests.filter((id) => id.toString() !== friendId);
-    friend.pendingRequests = friend.pendingRequests.filter((id) => id.toString() !== userId);
-
-    await user.save();
-    await friend.save();
-
-    res.json({ message: 'Friend request accepted' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error accepting friend request', error });
-  }
-});
+  router.post('/friends/accept', async (req, res) => {
+    try {
+      const { userId, friendId } = req.body;
+  
+      // Encontrar la solicitud pendiente
+      const friendship = await Friendship.findOne({
+        requester: friendId,
+        recipient: userId,
+        status: 'pending',
+      });
+  
+      if (!friendship) {
+        return res.status(400).json({ message: 'Friend request not found' });
+      }
+  
+      // Actualizar el estado a "accepted"
+      friendship.status = 'accepted';
+      await friendship.save();
+  
+      res.json({ message: 'Friend request accepted' });
+    } catch (error) {
+      res.status(500).json({ message: 'Error accepting friend request', error });
+    }
+  });
+  
 
 // Rechazar solicitud de amistad
 router.post('/friends/reject', async (req, res) => {
   try {
     const { userId, friendId } = req.body;
 
-    const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    const friendship = await Friendship.findOne({
+      requester: friendId,
+      recipient: userId,
+      status: 'pending',
+    });
 
-    user.incomingRequests = user.incomingRequests.filter((id) => id.toString() !== friendId);
-    await user.save();
+    if (!friendship) {
+      return res.status(404).json({ message: 'Friend request not found' });
+    }
+
+    friendship.status = 'rejected';
+    await friendship.save();
 
     res.json({ message: 'Friend request rejected' });
   } catch (error) {
@@ -84,34 +102,53 @@ router.post('/friends/reject', async (req, res) => {
   }
 });
 
-// Bloquear un usuario
 router.post('/friends/block', async (req, res) => {
-  try {
-    const { userId, blockId } = req.body;
-
-    const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    user.blockedUsers.push(blockId);
-    user.friends = user.friends.filter((id) => id.toString() !== blockId);
-    await user.save();
-
-    res.json({ message: 'User blocked' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error blocking user', error });
-  }
-});
+    try {
+      const { userId, blockId } = req.body;
+  
+      // Verificar si ya existe una relación
+      let friendship = await Friendship.findOne({
+        $or: [
+          { requester: userId, recipient: blockId },
+          { requester: blockId, recipient: userId },
+        ],
+      });
+  
+      if (!friendship) {
+        // Crear una relación nueva si no existe
+        friendship = new Friendship({ requester: userId, recipient: blockId });
+      }
+  
+      // Actualizar el estado a "blocked"
+      friendship.status = 'blocked';
+      friendship.blockReason = 'Bloqueado por el usuario';
+      await friendship.save();
+  
+      res.json({ message: 'User blocked' });
+    } catch (error) {
+      res.status(500).json({ message: 'Error blocking user', error });
+    }
+  });
+  
 
 // Desbloquear un usuario
 router.post('/friends/unblock', async (req, res) => {
   try {
     const { userId, unblockId } = req.body;
 
-    const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    const friendship = await Friendship.findOne({
+      $or: [
+        { requester: userId, recipient: unblockId },
+        { requester: unblockId, recipient: userId },
+      ],
+      status: 'blocked',
+    });
 
-    user.blockedUsers = user.blockedUsers.filter((id) => id.toString() !== unblockId);
-    await user.save();
+    if (!friendship) {
+      return res.status(404).json({ message: 'Friendship not found' });
+    }
+
+    await friendship.deleteOne();
 
     res.json({ message: 'User unblocked' });
   } catch (error) {
@@ -119,21 +156,24 @@ router.post('/friends/unblock', async (req, res) => {
   }
 });
 
-// Eliminar un amigo
+// Eliminar a un amigo
 router.post('/friends/remove', async (req, res) => {
   try {
     const { userId, friendId } = req.body;
 
-    const user = await User.findById(userId);
-    const friend = await User.findById(friendId);
+    const friendship = await Friendship.findOne({
+      $or: [
+        { requester: userId, recipient: friendId },
+        { requester: friendId, recipient: userId },
+      ],
+      status: 'accepted',
+    });
 
-    if (!user || !friend) return res.status(404).json({ message: 'User not found' });
+    if (!friendship) {
+      return res.status(404).json({ message: 'Friendship not found' });
+    }
 
-    user.friends = user.friends.filter((id) => id.toString() !== friendId);
-    friend.friends = friend.friends.filter((id) => id.toString() !== userId);
-
-    await user.save();
-    await friend.save();
+    await friendship.deleteOne();
 
     res.json({ message: 'Friend removed' });
   } catch (error) {
