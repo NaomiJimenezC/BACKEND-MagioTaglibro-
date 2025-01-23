@@ -2,6 +2,7 @@
 const express = require('express');
 const authRoutes = require('./Routes/Auth');
 const entriesRoutes = require('./Routes/Entries');
+const friendshipRoutes = require('./Routes/Friendships')
 const bodyParser = require('body-parser');
 const cors = require('cors');
 
@@ -15,6 +16,7 @@ app.use(cors());
 // Rutas
 app.use('/api/entries',entriesRoutes);
 app.use('/api/users', authRoutes);
+app.use('api/frienship',friendshipRoutes)
 
 // Inicia el servidor
 app.listen(PORT, () => {
