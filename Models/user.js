@@ -38,9 +38,33 @@ const userSchema = new Schema({
       year: 'numeric',
     }),
   },
+  friends: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
+  ],
+  pendingRequests: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
+  ],
+  incomingRequests: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
+  ],
+  blockedUsers: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
+  ],
 });
 
-// Campo virtual para obtener las amistades del usuario
+// Campo virtual para obtener todas las amistades del usuario (opcional si usas un modelo Friendship aparte)
 userSchema.virtual('friendships', {
   ref: 'Friendship', 
   localField: '_id', 
