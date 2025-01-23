@@ -16,7 +16,7 @@ app.use(cors());
 // Rutas
 app.use('/api/entries',entriesRoutes);
 app.use('/api/users', authRoutes);
-app.use('api/frienship',friendshipRoutes)
+app.use('/api/frienship',friendshipRoutes)
 
 // Inicia el servidor
 app.listen(PORT, () => {
