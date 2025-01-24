@@ -22,6 +22,25 @@ router.get("/:username", async (req, res) => {
     }
 });
 
+//recuperar la entrada más reciente
+router.get("/:username/latest"), async (req, res) => {
+    try {
+        const { username } = req.params;
+        const autorEntrada = await User.findOne({userName:username})
+        if (!autorEntrada) {
+            return res.status(404).json({ message: "El usuario no existe." });
+        }
+
+        const lastestEntry = await Entrada.findOne({autor_username: autorEntrada})
+        res.json(lastestEntry);
+    } catch (error){
+        res.status(500).json({ message: "Error al recuperar las entradas", error: error.message });
+
+    }
+}
+
+//recuperar la entrada
+
 router.get("/:username/:id", async (req, res) => {
     try {
         const { username, id } = req.params;
