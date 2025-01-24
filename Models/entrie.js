@@ -15,7 +15,7 @@ const entradaSchema = new Schema({
             type: String,
             required: true
         },
-        resumen: {
+            resumen: {
             type: String,
             required: true
         }
