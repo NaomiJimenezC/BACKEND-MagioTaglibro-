@@ -22,22 +22,36 @@ router.get("/:username", async (req, res) => {
     }
 });
 
-//recuperar la entrada más reciente
-router.get("/:username/latest"), async (req, res) => {
+// Recuperar la entrada más reciente
+router.get("/:username/latest", async (req, res) => {
     try {
         const { username } = req.params;
-        const autorEntrada = await User.findOne({userName:username})
+
+        // Verificar si el usuario existe
+        const autorEntrada = await User.findOne({ userName: username });
         if (!autorEntrada) {
             return res.status(404).json({ message: "El usuario no existe." });
         }
 
-        const lastestEntry = await Entrada.findOne({autor_username: autorEntrada})
-        res.json(lastestEntry);
-    } catch (error){
-        res.status(500).json({ message: "Error al recuperar las entradas", error: error.message });
+        // Recuperar la entrada más reciente ordenando por fecha de creación
+        const latestEntry = await Entrada.findOne({ autor_username: username })
+            .sort({ createdAt: -1 }) // Ordenar por fecha de creación descendente
+            .limit(1);
 
+        // Manejar caso de no existencia de entradas
+        if (!latestEntry) {
+            return res.status(404).json({ message: "No hay entradas para este usuario" });
+        }
+
+        res.json(latestEntry);
+    } catch (error) {
+        res.status(500).json({
+            message: "Error al recuperar la última entrada",
+            error: error.message
+        });
     }
-}
+});
+
 
 //recuperar la entrada
 
