@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const Friendship = require('../models/friendship');
-const User = require('../models/user');
+const Friendship = require('../Models/Friendship');
+const User = require('../Models/User');
 
 // Obtener todas las amistades relacionadas con el usuario
 router.get('/friends', async (req, res) => {
