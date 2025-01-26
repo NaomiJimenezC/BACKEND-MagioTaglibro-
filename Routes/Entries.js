@@ -27,20 +27,17 @@ router.get("/:username/latest", async (req, res) => {
     try {
         const { username } = req.params;
 
-        // Verificar si el usuario existe
         const autorEntrada = await User.findOne({ userName: username });
         if (!autorEntrada) {
             return res.status(404).json({ message: "El usuario no existe." });
         }
 
-        // Recuperar la entrada más reciente ordenando por fecha de creación
         const latestEntry = await Entrada.findOne({ autor_username: username })
             .sort({ createdAt: -1 }) // Ordenar por fecha de creación descendente
             .limit(1);
 
-        // Manejar caso de no existencia de entradas
         if (!latestEntry) {
-            return res.status(404).json({ message: "No hay entradas para este usuario" });
+            return res.status(404).json({ message: "Este usuario no tiene entradas" });
         }
 
         res.json(latestEntry);
@@ -82,7 +79,6 @@ router.post("/new", async (req, res) => {
     }
 
     try {
-        // Verificar si el autor existe
         const usuarioExistente = await User.findOne({ userName: autor_username });
         if (!usuarioExistente) {
             return res.status(404).json({ message: "El usuario no existe." });

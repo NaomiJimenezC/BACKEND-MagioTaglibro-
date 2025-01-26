@@ -12,7 +12,7 @@ const entradaSchema = new Schema({
             required: true
         },
         eventos_clave: {
-            type: String,
+            type: [{type: String}],
             required: true
         },
             resumen: {
