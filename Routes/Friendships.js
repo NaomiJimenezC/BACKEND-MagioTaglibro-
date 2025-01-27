@@ -4,38 +4,42 @@ const mongoose = require('mongoose');
 const Friendship = require('../Models/friendship');
 const User = require('../Models/user');
 
-// Helper function to validate user IDs
-const validateUserIds = async (userId, friendId) => {
-  if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(friendId)) {
-    throw new Error('Invalid user ID format');
-  }
-
+// Helper function to validate user usernames
+const validateUsernames = async (username, friendUsername) => {
   const [requester, recipient] = await Promise.all([
-    User.findById(userId),
-    User.findById(friendId),
+    User.findOne({ username: username }),
+    User.findOne({ username: friendUsername }),
   ]);
 
   if (!requester || !recipient) {
     throw new Error('One or both users do not exist');
   }
+
+  return [requester._id, recipient._id]; // Return user IDs for the friendship creation
 };
 
 // Obtener todas las amistades relacionadas con el usuario
 router.get('/friends', async (req, res) => {
   try {
-    const userId = req.query.userId;
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ message: 'Invalid user ID format' });
+    const username = req.query.username;
+    const user = await User.findOne({ username: username });
+
+    if (!user) {
+      return res.status(400).json({ message: 'User not found' });
     }
 
     const friendships = await Friendship.find({
-      $or: [{ requester: userId }, { recipient: userId }],
+      $or: [{ requester: user._id }, { recipient: user._id }],
     }).populate('requester recipient', 'username email');
 
     const response = {
       friends: friendships.filter((f) => f.status === 'accepted'),
-      pendingRequests: friendships.filter((f) => f.status === 'pending' && f.requester.toString() === userId),
-      incomingRequests: friendships.filter((f) => f.status === 'pending' && f.recipient.toString() === userId),
+      pendingRequests: friendships.filter(
+        (f) => f.status === 'pending' && f.requester.toString() === user._id.toString()
+      ),
+      incomingRequests: friendships.filter(
+        (f) => f.status === 'pending' && f.recipient.toString() === user._id.toString()
+      ),
       blockedUsers: friendships.filter((f) => f.status === 'blocked'),
     };
 
@@ -48,8 +52,8 @@ router.get('/friends', async (req, res) => {
 // Solicitar amistad
 router.post('/friends/request', async (req, res) => {
   try {
-    const { userId, friendId } = req.body;
-    await validateUserIds(userId, friendId);
+    const { username, friendUsername } = req.body;
+    const [userId, friendId] = await validateUsernames(username, friendUsername);
 
     const existingFriendship = await Friendship.findOne({
       $or: [
@@ -74,8 +78,8 @@ router.post('/friends/request', async (req, res) => {
 // Aceptar solicitud de amistad
 router.post('/friends/accept', async (req, res) => {
   try {
-    const { userId, friendId } = req.body;
-    await validateUserIds(userId, friendId);
+    const { username, friendUsername } = req.body;
+    const [userId, friendId] = await validateUsernames(username, friendUsername);
 
     const friendship = await Friendship.findOne({
       requester: friendId,
@@ -99,8 +103,8 @@ router.post('/friends/accept', async (req, res) => {
 // Rechazar solicitud de amistad
 router.post('/friends/reject', async (req, res) => {
   try {
-    const { userId, friendId } = req.body;
-    await validateUserIds(userId, friendId);
+    const { username, friendUsername } = req.body;
+    const [userId, friendId] = await validateUsernames(username, friendUsername);
 
     const friendship = await Friendship.findOne({
       requester: friendId,
@@ -124,8 +128,8 @@ router.post('/friends/reject', async (req, res) => {
 // Bloquear usuario
 router.post('/friends/block', async (req, res) => {
   try {
-    const { userId, blockId } = req.body;
-    await validateUserIds(userId, blockId);
+    const { username, blockUsername } = req.body;
+    const [userId, blockId] = await validateUsernames(username, blockUsername);
 
     let friendship = await Friendship.findOne({
       $or: [
