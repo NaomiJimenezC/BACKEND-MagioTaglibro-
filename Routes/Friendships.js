@@ -42,7 +42,28 @@ router.get('/friends/:username', async (req, res) => {
   }
 });
 
-// Ruta para obtener las solicitudes de amistad pendientes
+// Ruta para obtener las solicitudes de amistad entrantes
+router.get('/friends/incoming/:username', async (req, res) => {
+  try {
+    const username = req.params.username;
+    const user = await User.findOne({ username: username });
+
+    if (!user) {
+      return res.status(400).json({ message: 'User not found' });
+    }
+
+    const incomingRequests = await Friendship.find({
+      recipient: user._id,
+      status: 'pending',
+    }).populate('requester', 'username email'); // Trae los datos del solicitante
+
+    res.json({ incomingRequests });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching incoming friend requests', error: error.message });
+  }
+});
+
+// Ruta para obtener las solicitudes de amistad pendientes enviadas
 router.get('/friends/pending/:username', async (req, res) => {
   try {
     const username = req.params.username;
@@ -52,23 +73,17 @@ router.get('/friends/pending/:username', async (req, res) => {
       return res.status(400).json({ message: 'User not found' });
     }
 
-    const friendships = await Friendship.find({
-      $or: [{ requester: user._id }, { recipient: user._id }],
+    const pendingRequests = await Friendship.find({
+      requester: user._id,
       status: 'pending',
-    }).populate('requester recipient', 'username email');
+    }).populate('recipient', 'username email'); // Trae los datos del destinatario
 
-    const pendingRequests = friendships.filter(
-      (f) => f.requester.toString() === user._id.toString()
-    );
-    const incomingRequests = friendships.filter(
-      (f) => f.recipient.toString() === user._id.toString()
-    );
-
-    res.json({ pendingRequests, incomingRequests });
+    res.json({ pendingRequests });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching pending friend requests', error: error.message });
   }
 });
+
 
 // Ruta para obtener la lista de usuarios bloqueados
 router.get('/friends/blocked/:username', async (req, res) => {
