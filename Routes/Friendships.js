@@ -15,10 +15,10 @@ const validateUsernames = async (username, friendUsername) => {
     throw new Error('One or both users do not exist');
   }
 
-  return [requester._id, recipient._id]; // Return user IDs for the friendship creation
+  return [requester._id, recipient._id];
 };
 
-// Obtener todas las amistades relacionadas con el usuario
+// Ruta para obtener el estado de las amistades de un usuario
 router.get('/friends', async (req, res) => {
   try {
     const username = req.query.username;
@@ -49,7 +49,7 @@ router.get('/friends', async (req, res) => {
   }
 });
 
-// Solicitar amistad
+// Ruta para enviar solicitud de amistad
 router.post('/friends/request', async (req, res) => {
   try {
     const { username, friendUsername } = req.body;
@@ -75,7 +75,7 @@ router.post('/friends/request', async (req, res) => {
   }
 });
 
-// Aceptar solicitud de amistad
+// Ruta para aceptar solicitud de amistad
 router.post('/friends/accept', async (req, res) => {
   try {
     const { username, friendUsername } = req.body;
@@ -100,7 +100,7 @@ router.post('/friends/accept', async (req, res) => {
   }
 });
 
-// Rechazar solicitud de amistad
+// Ruta para rechazar solicitud de amistad
 router.post('/friends/reject', async (req, res) => {
   try {
     const { username, friendUsername } = req.body;
@@ -125,7 +125,7 @@ router.post('/friends/reject', async (req, res) => {
   }
 });
 
-// Bloquear usuario
+// Ruta para bloquear un usuario
 router.post('/friends/block', async (req, res) => {
   try {
     const { username, blockUsername } = req.body;
@@ -149,6 +149,34 @@ router.post('/friends/block', async (req, res) => {
     res.json({ message: 'User blocked', friendship });
   } catch (error) {
     res.status(500).json({ message: 'Error blocking user', error: error.message });
+  }
+});
+
+// Ruta para obtener la lista de amigos y bloqueados
+router.get('/friends/list', async (req, res) => {
+  try {
+    const username = req.query.username;
+    const user = await User.findOne({ username });
+
+    if (!user) {
+      return res.status(400).json({ message: 'User not found' });
+    }
+
+    const friendships = await Friendship.find({
+      $or: [{ requester: user._id }, { recipient: user._id }],
+    }).populate('requester recipient', 'username email');
+
+    const friends = friendships
+      .filter((f) => f.status === 'accepted')
+      .map((f) => (f.requester._id.equals(user._id) ? f.recipient : f.requester));
+
+    const blocked = friendships
+      .filter((f) => f.status === 'blocked')
+      .map((f) => (f.requester._id.equals(user._id) ? f.recipient : f.requester));
+
+    res.json({ friends, blocked });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching list', error: error.message });
   }
 });
 
