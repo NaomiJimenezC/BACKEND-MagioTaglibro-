@@ -18,10 +18,10 @@ const validateUsernames = async (username, friendUsername) => {
   return [requester._id, recipient._id];
 };
 
-// Ruta para obtener el estado de las amistades de un usuario
-router.get('/friends', async (req, res) => {
+// Ruta para obtener la lista de amigos de un usuario
+router.get('/friends/:username', async (req, res) => {
   try {
-    const username = req.query.username;
+    const username = req.params.username;
     const user = await User.findOne({ username: username });
 
     if (!user) {
@@ -32,27 +32,72 @@ router.get('/friends', async (req, res) => {
       $or: [{ requester: user._id }, { recipient: user._id }],
     }).populate('requester recipient', 'username email');
 
-    const response = {
-      friends: friendships.filter((f) => f.status === 'accepted'),
-      pendingRequests: friendships.filter(
-        (f) => f.status === 'pending' && f.requester.toString() === user._id.toString()
-      ),
-      incomingRequests: friendships.filter(
-        (f) => f.status === 'pending' && f.recipient.toString() === user._id.toString()
-      ),
-      blockedUsers: friendships.filter((f) => f.status === 'blocked'),
-    };
+    const friends = friendships
+      .filter((f) => f.status === 'accepted')
+      .map((f) => (f.requester._id.equals(user._id) ? f.recipient : f.requester));
 
-    res.json(response);
+    res.json({ friends });
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching friends data', error: error.message });
+    res.status(500).json({ message: 'Error fetching friends list', error: error.message });
+  }
+});
+
+// Ruta para obtener las solicitudes de amistad pendientes
+router.get('/friends/pending/:username', async (req, res) => {
+  try {
+    const username = req.params.username;
+    const user = await User.findOne({ username: username });
+
+    if (!user) {
+      return res.status(400).json({ message: 'User not found' });
+    }
+
+    const friendships = await Friendship.find({
+      $or: [{ requester: user._id }, { recipient: user._id }],
+      status: 'pending',
+    }).populate('requester recipient', 'username email');
+
+    const pendingRequests = friendships.filter(
+      (f) => f.requester.toString() === user._id.toString()
+    );
+    const incomingRequests = friendships.filter(
+      (f) => f.recipient.toString() === user._id.toString()
+    );
+
+    res.json({ pendingRequests, incomingRequests });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching pending friend requests', error: error.message });
+  }
+});
+
+// Ruta para obtener la lista de usuarios bloqueados
+router.get('/friends/blocked/:username', async (req, res) => {
+  try {
+    const username = req.params.username;
+    const user = await User.findOne({ username: username });
+
+    if (!user) {
+      return res.status(400).json({ message: 'User not found' });
+    }
+
+    const friendships = await Friendship.find({
+      $or: [{ requester: user._id }, { recipient: user._id }],
+      status: 'blocked',
+    }).populate('requester recipient', 'username email');
+
+    const blockedUsers = friendships.map((f) => (f.requester._id.equals(user._id) ? f.recipient : f.requester));
+
+    res.json({ blockedUsers });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching blocked users list', error: error.message });
   }
 });
 
 // Ruta para enviar solicitud de amistad
-router.post('/friends/request', async (req, res) => {
+router.post('/friends/request/:username', async (req, res) => {
   try {
-    const { username, friendUsername } = req.body;
+    const { friendUsername } = req.body;
+    const username = req.params.username;
     const [userId, friendId] = await validateUsernames(username, friendUsername);
 
     const existingFriendship = await Friendship.findOne({
@@ -76,9 +121,10 @@ router.post('/friends/request', async (req, res) => {
 });
 
 // Ruta para aceptar solicitud de amistad
-router.post('/friends/accept', async (req, res) => {
+router.post('/friends/accept/:username', async (req, res) => {
   try {
-    const { username, friendUsername } = req.body;
+    const { friendUsername } = req.body;
+    const username = req.params.username;
     const [userId, friendId] = await validateUsernames(username, friendUsername);
 
     const friendship = await Friendship.findOne({
@@ -101,9 +147,10 @@ router.post('/friends/accept', async (req, res) => {
 });
 
 // Ruta para rechazar solicitud de amistad
-router.post('/friends/reject', async (req, res) => {
+router.post('/friends/reject/:username', async (req, res) => {
   try {
-    const { username, friendUsername } = req.body;
+    const { friendUsername } = req.body;
+    const username = req.params.username;
     const [userId, friendId] = await validateUsernames(username, friendUsername);
 
     const friendship = await Friendship.findOne({
@@ -126,9 +173,10 @@ router.post('/friends/reject', async (req, res) => {
 });
 
 // Ruta para bloquear un usuario
-router.post('/friends/block', async (req, res) => {
+router.post('/friends/block/:username', async (req, res) => {
   try {
-    const { username, blockUsername } = req.body;
+    const { blockUsername } = req.body;
+    const username = req.params.username;
     const [userId, blockId] = await validateUsernames(username, blockUsername);
 
     let friendship = await Friendship.findOne({
@@ -152,31 +200,32 @@ router.post('/friends/block', async (req, res) => {
   }
 });
 
-// Ruta para obtener la lista de amigos y bloqueados
-router.get('/friends/list', async (req, res) => {
+// Ruta para desbloquear un usuario
+router.post('/friends/unblock/:username', async (req, res) => {
   try {
-    const username = req.query.username;
-    const user = await User.findOne({ username });
+    const { blockUsername } = req.body;
+    const username = req.params.username;
+    const [userId, blockId] = await validateUsernames(username, blockUsername);
 
-    if (!user) {
-      return res.status(400).json({ message: 'User not found' });
+    const friendship = await Friendship.findOne({
+      $or: [
+        { requester: userId, recipient: blockId },
+        { requester: blockId, recipient: userId },
+      ],
+      status: 'blocked',
+    });
+
+    if (!friendship) {
+      return res.status(404).json({ message: 'Blocked friendship not found' });
     }
 
-    const friendships = await Friendship.find({
-      $or: [{ requester: user._id }, { recipient: user._id }],
-    }).populate('requester recipient', 'username email');
+    friendship.status = 'accepted';  // or 'pending' depending on how you want to handle this
+    friendship.blockReason = null;  // Clear the block reason
+    await friendship.save();
 
-    const friends = friendships
-      .filter((f) => f.status === 'accepted')
-      .map((f) => (f.requester._id.equals(user._id) ? f.recipient : f.requester));
-
-    const blocked = friendships
-      .filter((f) => f.status === 'blocked')
-      .map((f) => (f.requester._id.equals(user._id) ? f.recipient : f.requester));
-
-    res.json({ friends, blocked });
+    res.json({ message: 'User unblocked', friendship });
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching list', error: error.message });
+    res.status(500).json({ message: 'Error unblocking user', error: error.message });
   }
 });
 
