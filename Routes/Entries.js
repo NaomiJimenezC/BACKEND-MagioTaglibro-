@@ -10,7 +10,7 @@ router.get("/:username", async (req, res) => {
     try {
         const { username } = req.params;
 
-        const usuarioExistente = await User.findOne({ userName: username });
+        const usuarioExistente = await User.findOne({ username: username });
         if (!usuarioExistente) {
             return res.status(404).json({ message: "El usuario no existe." });
         }
@@ -27,7 +27,7 @@ router.get("/:username/latest", async (req, res) => {
     try {
         const { username } = req.params;
 
-        const autorEntrada = await User.findOne({ userName: username });
+        const autorEntrada = await User.findOne({ username: username });
         if (!autorEntrada) {
             return res.status(404).json({ message: "El usuario no existe." });
         }
@@ -79,7 +79,7 @@ router.post("/new", async (req, res) => {
     }
 
     try {
-        const usuarioExistente = await User.findOne({ userName: autor_username });
+        const usuarioExistente = await User.findOne({ username: autor_username });
         if (!usuarioExistente) {
             return res.status(404).json({ message: "El usuario no existe." });
         }
@@ -89,7 +89,7 @@ router.post("/new", async (req, res) => {
             { titulo, autor_username },
             { contenido },
             { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
-        );
+        );  
 
         const mensaje = entradaActualizada.isNew ? "Entrada creada" : "Entrada actualizada";
         res.status(201).json({ message: mensaje, entrada: entradaActualizada });
