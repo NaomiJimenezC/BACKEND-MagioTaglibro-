@@ -86,7 +86,7 @@ router.post("/new", async (req, res) => {
 
         // Buscar y actualizar la entrada, o crear una nueva si no existe
         const entradaActualizada = await Entrada.findOneAndUpdate(
-            { titulo,contenido },
+            { fecha_creacion },
             { titulo,contenido },
             { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
         );  
