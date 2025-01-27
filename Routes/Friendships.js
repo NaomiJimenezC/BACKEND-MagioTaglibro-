@@ -177,10 +177,10 @@ router.post('/friends/reject/:username', async (req, res) => {
       return res.status(404).json({ message: 'Friend request not found' });
     }
 
-    friendship.status = 'rejected';
-    await friendship.save();
+    // Eliminar la solicitud de amistad
+    await friendship.delete();
 
-    res.json({ message: 'Friend request rejected', friendship });
+    res.json({ message: 'Friend request rejected and deleted' });
   } catch (error) {
     res.status(500).json({ message: 'Error rejecting friend request', error: error.message });
   }
@@ -203,9 +203,10 @@ router.post('/friends/cancel/:username', async (req, res) => {
       return res.status(404).json({ message: 'Pending friend request not found' });
     }
 
+    // Eliminar la solicitud de amistad
     await friendship.delete();
 
-    res.json({ message: 'Friend request canceled' });
+    res.json({ message: 'Friend request canceled and deleted' });
   } catch (error) {
     res.status(500).json({ message: 'Error canceling friend request', error: error.message });
   }
