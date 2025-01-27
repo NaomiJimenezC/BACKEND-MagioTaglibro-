@@ -37,7 +37,7 @@ router.get("/:username/latest", async (req, res) => {
             .limit(1);
 
         if (!latestEntry) {
-            return res.status(404).json({ message: "Este usuario no tiene entradas" });
+            return res.status(200).json(null);
         }
 
         res.json(latestEntry);
