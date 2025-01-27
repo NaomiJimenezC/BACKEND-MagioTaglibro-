@@ -269,4 +269,32 @@ router.post('/friends/unblock/:username', async (req, res) => {
   }
 });
 
+// Ruta para eliminar amigo
+router.delete('/friends/remove/:username', async (req, res) => {
+  try {
+    const { friendUsername } = req.body;
+    const username = req.params.username;
+    const [userId, friendId] = await validateUsernames(username, friendUsername);
+
+    const friendship = await Friendship.findOne({
+      $or: [
+        { requester: userId, recipient: friendId },
+        { requester: friendId, recipient: userId },
+      ],
+      status: 'accepted',
+    });
+
+    if (!friendship) {
+      return res.status(404).json({ message: 'Friendship not found' });
+    }
+
+    // Eliminar la relación de amistad
+    await friendship.delete();
+
+    res.json({ message: 'Friend removed successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error removing friend', error: error.message });
+  }
+});
+
 module.exports = router;
