@@ -49,6 +49,31 @@ router.get("/:username/latest", async (req, res) => {
     }
 });
 
+//recuperar una entrada compartida
+
+router.get("/shared-entries/:username/:id_entry", async(req,res)=>{
+    try {
+    const {username,id_entry} = req.body;
+
+    if (req.user.username !== username) {
+        return res.status(403).json({ message: "No autorizado" });
+    }
+
+    const entry = await Entrada.findOne({
+        _id: id,
+        compartido_con: { $in: [username] }
+    });
+
+    if (!entry) {
+        return res.status(404).json({ message: "Entrada no encontrada o no compartida con este usuario" });
+    }
+
+    res.json(entry);
+} catch (error) {
+    res.status(500).json({ message: "Error al obtener la entrada compartida", error: error.message });
+}})
+;
+
 
 //recuperar la entrada
 
