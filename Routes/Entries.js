@@ -55,10 +55,6 @@ router.get("/shared-entries/:username/:id_entry", async(req,res)=>{
     try {
     const {username,id_entry} = req.params;
 
-    if (req.user.username !== username) {
-        return res.status(403).json({ message: "No autorizado" });
-    }
-
     const entry = await Entrada.findOne({
         _id: id_entry,
         compartido_con: { $in: [username] }
