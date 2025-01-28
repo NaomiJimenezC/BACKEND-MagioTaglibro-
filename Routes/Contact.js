@@ -1,6 +1,8 @@
 const express = require('express');
 const contact = require("../Models/contact.js")
 
+const router = express.Router();
+
 //subir el formulario de contacto
 
 router.post("/sent", async(req,res) => {
