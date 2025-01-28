@@ -23,13 +23,8 @@ const contactSchema = new Schema({
             month: '2-digit',
             year: 'numeric'
         })
-    },
-    autor_username: {
-        type: String,
-        ref: 'User',
-        required: true
-    },
-    
+    }
+
 });
 
 const Entrada = mongoose.model('Contact', contactSchema);
