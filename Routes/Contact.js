@@ -1,5 +1,5 @@
 const express = require('express');
-const contact = requiere("../Models/contact.js")
+const contact = require("../Models/contact.js")
 
 //subir el formulario de contacto
 
