@@ -13,15 +13,13 @@ router.post("/sent", async (req, res) => {
     }
 
     try {
-        const newContact = new Contact({
+        const newContact = await Contact.create({
             subject: subject,
             email: {
                 email_user: email_user,
                 email_body: email_body
             }
         });
-
-        await newContact.save();
 
         res.status(201).json({
             message: "Formulario de contacto enviado con éxito",
