@@ -160,13 +160,14 @@ router.post('/friends/accept/:username', async (req, res) => {
   }
 });
 
-// Ruta para rechazar solicitud de amistad
+// Ruta para rechazar y eliminar solicitud de amistad
 router.post('/friends/reject/:username', async (req, res) => {
   try {
-    const { friendUsername } = req.body;
+    const { friendUsername, rejectionReason } = req.body; // Motivo opcional del rechazo
     const username = req.params.username;
     const [userId, friendId] = await validateUsernames(username, friendUsername);
 
+    // Buscar la solicitud de amistad en estado 'pending' (pendiente)
     const friendship = await Friendship.findOne({
       requester: friendId,
       recipient: userId,
@@ -177,14 +178,16 @@ router.post('/friends/reject/:username', async (req, res) => {
       return res.status(404).json({ message: 'Friend request not found' });
     }
 
-    // Eliminar la solicitud de amistad
+    // Si la solicitud es encontrada, eliminarla directamente
     await friendship.delete();
 
+    // Enviar respuesta de éxito
     res.json({ message: 'Friend request rejected and deleted' });
   } catch (error) {
-    res.status(500).json({ message: 'Error rejecting friend request', error: error.message });
+    res.status(500).json({ message: 'Error rejecting and deleting friend request', error: error.message });
   }
 });
+
 
 // Ruta para cancelar solicitud de amistad
 router.post('/friends/cancel/:username', async (req, res) => {
