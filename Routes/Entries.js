@@ -92,7 +92,7 @@ router.get("/:username/:id", async (req, res) => {
 });
 
 router.post("/new", async (req, res) => {
-    const { titulo, contenido, autor_username,fecha_creacion } = req.body;
+    const { titulo, contenido, autor_username,fecha_creacion,compartido_con } = req.body;
 
     // Validar los datos recibidos
     if (!titulo || !contenido || !autor_username) {
@@ -108,7 +108,7 @@ router.post("/new", async (req, res) => {
         // Buscar y actualizar la entrada, o crear una nueva si no existe
         const entradaActualizada = await Entrada.findOneAndUpdate(
             { fecha_creacion },
-            { titulo,contenido, autor_username },
+            { titulo,contenido, autor_username,compartido_con},
             { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
         );  
 
