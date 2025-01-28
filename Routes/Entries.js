@@ -92,9 +92,9 @@ router.get("/:username/:id", async (req, res) => {
 });
 
 router.post("/new", async (req, res) => {
-    const { titulo, contenido, autor_username,fecha_creacion,compartido_con } = req.body;
+    const { titulo, contenido, autor_username, fecha_creacion, compartido_con } = req.body;
+    console.log(compartido_con);
 
-    // Validar los datos recibidos
     if (!titulo || !contenido || !autor_username) {
         return res.status(400).json({ message: "Título, contenido y autor_username son requeridos." });
     }
@@ -105,12 +105,18 @@ router.post("/new", async (req, res) => {
             return res.status(404).json({ message: "El usuario no existe." });
         }
 
-        // Buscar y actualizar la entrada, o crear una nueva si no existe
         const entradaActualizada = await Entrada.findOneAndUpdate(
             { fecha_creacion },
-            { titulo,contenido, autor_username,compartido_con},
+            { 
+                $set: {
+                    titulo,
+                    contenido,
+                    autor_username,
+                    compartido_con
+                }
+            },
             { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
-        );  
+        );
 
         const mensaje = entradaActualizada.isNew ? "Entrada creada" : "Entrada actualizada";
         res.status(201).json({ message: mensaje, entrada: entradaActualizada });
