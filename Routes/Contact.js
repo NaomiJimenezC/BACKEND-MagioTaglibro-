@@ -25,3 +25,5 @@ router.post("/sent", async(req,res) => {
         res.status(500).json({ message: "Error al enviar el formulario de contacto", error: error.message });
     }
 })
+
+module.exports = router;
