@@ -79,6 +79,7 @@ router.get("/shared-entries/:username/", async(req,res)=>{
         const entry = await Entrada.find({
             compartido_con: { $in: [username] }
         });
+
         res.json(entry);
     } catch (error) {
         res.status(500).json({ message: "Error al obtener la entrada compartida", error: error.message });
@@ -105,6 +106,29 @@ router.get("/:username/:id", async (req, res) => {
     }
 });
 
+//compartir entrada
+router.patch("/shared-entries/:id_entry/:shared_username", async (req, res) => {
+    try {
+        const { shared_username, id_entry } = req.params;
+
+        const updatedEntry = await Entrada.findByIdAndUpdate(
+            id_entry,
+            { $addToSet: { compartido_con: shared_username } },
+            { new: true }
+        );
+
+        if (!updatedEntry) {
+            return res.status(404).json({ message: "Entrada no encontrada" });
+        }
+
+        res.json(updatedEntry);
+    } catch (error) {
+        res.status(500).json({ message: "Error al actualizar la entrada compartida", error: error.message });
+    }
+});
+
+
+//nueva entrada
 router.post("/new", async (req, res) => {
     const { titulo, contenido, autor_username, fecha_creacion, compartido_con } = req.body;
     console.log(compartido_con);
