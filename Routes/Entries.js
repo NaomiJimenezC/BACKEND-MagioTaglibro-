@@ -33,7 +33,7 @@ router.get("/:username/latest", async (req, res) => {
         }
 
         const latestEntry = await Entrada.findOne({ autor_username: username })
-            .sort({ createdAt: -1 }) // Ordenar por fecha de creación descendente
+            .sort({ createdAt: 1 }) // Ordenar por fecha de creación descendente
             .limit(1);
 
         if (!latestEntry) {
