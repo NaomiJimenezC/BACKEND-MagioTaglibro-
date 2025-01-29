@@ -51,6 +51,28 @@ router.get("/:username/latest", async (req, res) => {
 
 //recuperar una entrada compartida
 
+router.get("/shared-entries/:id_entry",async(req,res)=>{
+    try{
+        const {id_entry} = req.params
+
+        const entrada = await Entrada.findById(id_entry)
+
+        const sharedUsers = entrada.compartido_con || []
+
+        res.status(200).json({
+            message: "Usuarios con quienes se ha compartido la entrada obtenidos con éxito",
+            sharedUsers
+        });
+    }
+    catch(error){
+        console.error("Error al obtener usuarios compartidos:", error);
+        res.status(500).json({ message: "Error interno del servidor" });
+    
+    }
+})
+//puedo simplemente pasar la lista de compartidos no?
+
+//actualiza la lista de usuarios compartidos
 router.patch("/shared-entries/:id_entry", async (req, res) => {
     try {
         const { id_entry } = req.params;
