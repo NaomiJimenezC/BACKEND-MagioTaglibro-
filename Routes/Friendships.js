@@ -228,35 +228,41 @@ router.post('/friends/cancel/:username', async (req, res) => {
   }
 });
 
-// Ruta para bloquear un usuario
 router.post('/friends/block/:username', async (req, res) => {
   try {
+    console.log(req.body); // 🔹 Verificar que el frontend está enviando los datos correctamente
+
     const { blockUsername } = req.body;
     const username = req.params.username;
 
     // Buscar los _id de los usuarios en la colección User
     const user = await User.findOne({ username });
-    const blockUser = await User.findOne({ username: blockUsername });
+    const blockedUser = await User.findOne({ username: blockUsername });
 
-    if (!user || !blockUser) {
+    if (!user || !blockedUser) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Buscar amistad con los IDs obtenidos
+    // Buscar la amistad con los IDs obtenidos
     let friendship = await Friendship.findOne({
       $or: [
-        { requester: user._id, recipient: blockUser._id },
-        { requester: blockUser._id, recipient: user._id },
+        { requester: user._id, recipient: blockedUser._id },
+        { requester: blockedUser._id, recipient: user._id },
       ],
     });
 
-    // Si no existe, crearla
-    if (!friendship) {
-      friendship = new Friendship({ requester: user._id, recipient: blockUser._id });
+    // Si ya está bloqueado, avisar en lugar de bloquear de nuevo
+    if (friendship && friendship.status === 'blocked') {
+      return res.status(400).json({ message: 'User is already blocked' });
     }
 
+    // Si no existe, crearla
+    if (!friendship) {
+      friendship = new Friendship({ requester: user._id, recipient: blockedUser._id });
+    }
+
+    // Bloquear la amistad
     friendship.status = 'blocked';
-    friendship.blockReason = 'Blocked by user';
     await friendship.save();
 
     res.json({ message: 'User blocked', friendship });
@@ -266,36 +272,43 @@ router.post('/friends/block/:username', async (req, res) => {
 });
 
 
+
 // Ruta para desbloquear un usuario
 router.post('/friends/unblock/:username', async (req, res) => {
   try {
+    console.log(req.body); // 🔹 Verificar que el frontend está enviando los datos correctamente
+
     const { blockUsername } = req.body;
     const username = req.params.username;
 
     // Buscar los _id de los usuarios en la colección User
     const user = await User.findOne({ username });
-    const blockUser = await User.findOne({ username: blockUsername });
+    const blockedUser = await User.findOne({ username: blockUsername });
 
-    if (!user || !blockUser) {
+    if (!user || !blockedUser) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Buscar la amistad bloqueada usando los IDs obtenidos
+    // Buscar la amistad bloqueada
     const friendship = await Friendship.findOne({
       $or: [
-        { requester: user._id, recipient: blockUser._id },
-        { requester: blockUser._id, recipient: user._id },
+        { requester: user._id, recipient: blockedUser._id },
+        { requester: blockedUser._id, recipient: user._id },
       ],
-      status: 'blocked',
     });
 
+    // Verificar si la relación está realmente bloqueada
     if (!friendship) {
-      return res.status(404).json({ message: 'Blocked friendship not found' });
+      return res.status(404).json({ message: 'Friendship not found' });
     }
 
-    // Desbloquear la amistad (puedes cambiar 'accepted' por 'pending' si es necesario)
-    friendship.status = 'accepted';
-    friendship.blockReason = null;  
+    if (friendship.status !== 'blocked') {
+      return res.status(400).json({ message: 'Friendship is not blocked' });
+    }
+
+    // Desbloquear la amistad
+    friendship.status = 'accepted'; // o 'pending' según tu lógica
+    friendship.blockReason = null;
     await friendship.save();
 
     res.json({ message: 'User unblocked', friendship });
@@ -303,6 +316,7 @@ router.post('/friends/unblock/:username', async (req, res) => {
     res.status(500).json({ message: 'Error unblocking user', error: error.message });
   }
 });
+
 
 
 // Ruta para eliminar amigo
