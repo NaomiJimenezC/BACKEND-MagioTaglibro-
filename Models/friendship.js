@@ -19,4 +19,4 @@ const friendshipSchema = new Schema(
     { timestamps: true } // Incluye automáticamente createdAt y updatedAt
 );
 
-module.exports = mongoose.model('Friendship', friendshipSchema);
+module.exports = mongoose.model('friendship', friendshipSchema);

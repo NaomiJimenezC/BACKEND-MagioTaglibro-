@@ -44,7 +44,7 @@ const userSchema = new Schema({
 
 // Campo virtual para conectar con la tabla Friendship
 userSchema.virtual('friendships', {
-  ref: 'driendship', // Nombre del modelo
+  ref: 'friendship', // Nombre del modelo
   localField: '_id', // ID del usuario en el esquema actual
   foreignField: 'requester', // Campo en Friendship que referencia al usuario
 });
