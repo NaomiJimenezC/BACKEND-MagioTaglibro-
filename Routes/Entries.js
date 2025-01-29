@@ -51,24 +51,31 @@ router.get("/:username/latest", async (req, res) => {
 
 //recuperar una entrada compartida
 
-router.get("/shared-entries/:username/:id_entry", async(req,res)=>{
+router.patch("/shared-entries/:id_entry", async (req, res) => {
     try {
-    const {username,id_entry} = req.params;
+        const { id_entry } = req.params;
+        const { shared_usernames } = req.body;
 
-    const entry = await Entrada.findOne({
-        _id: id_entry,
-        compartido_con: { $in: [username] }
-    });
+        // Validamos que shared_usernames sea un array no vacío
+        if (!Array.isArray(shared_usernames) || shared_usernames.length === 0) {
+            return res.status(400).json({ message: "Se debe compartir con al menos un usuario" });
+        }
 
-    if (!entry) {
-        return res.status(404).json({ message: "Entrada no encontrada o no compartida con este usuario" });
+        const updatedEntry = await Entrada.findByIdAndUpdate(
+            id_entry,
+            { $addToSet: { compartido_con: { $each: shared_usernames } } },
+            { new: true }
+        );
+
+        if (!updatedEntry) {
+            return res.status(404).json({ message: "Entrada no encontrada" });
+        }
+
+        res.json(updatedEntry);
+    } catch (error) {
+        res.status(500).json({ message: "Error al actualizar la entrada compartida", error: error.message });
     }
-
-    res.json(entry);
-} catch (error) {
-    res.status(500).json({ message: "Error al obtener la entrada compartida", error: error.message });
-}})
-;
+});
 
 //recuperar todas las entradas compartidas de un usuario (hacia ese usuario)
 
