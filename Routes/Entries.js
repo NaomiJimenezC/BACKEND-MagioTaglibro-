@@ -70,6 +70,20 @@ router.get("/shared-entries/:username/:id_entry", async(req,res)=>{
 }})
 ;
 
+//recuperar todas las entradas compartidas de un usuario (hacia ese usuario)
+
+router.get("/shared-entries/:username/", async(req,res)=>{
+    try {
+        const {username} = req.params;
+
+        const entry = await Entrada.find({
+            compartido_con: { $in: [username] }
+        });
+        res.json(entry);
+    } catch (error) {
+        res.status(500).json({ message: "Error al obtener la entrada compartida", error: error.message });
+    }})
+;
 
 //recuperar la entrada
 
