@@ -228,6 +228,8 @@ router.post('/friends/cancel/:username', async (req, res) => {
   }
 });
 
+
+// función para bloquear un usuario
 router.post('/friends/block/:username', async (req, res) => {
   try {
     console.log(req.body); // 🔹 Verificar que el frontend está enviando los datos correctamente
