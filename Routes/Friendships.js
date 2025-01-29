@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const Friendship = require('../Models/friendship');
 const User = require('../Models/user');
 
-// Helper function to validate user usernames
+
 const validateUsernames = async (username, friendUsername) => {
   const [requester, recipient] = await Promise.all([
     User.findOne({ username: username }),
@@ -160,6 +160,7 @@ router.post('/friends/accept/:username', async (req, res) => {
   }
 });
 
+// ruta para rechazar amistad
 router.post('/friends/reject/:username', async (req, res) => {
   try {
     const { friendUsername, rejectionReason } = req.body;
@@ -229,11 +230,9 @@ router.post('/friends/cancel/:username', async (req, res) => {
 });
 
 
-// función para bloquear un usuario
+// ruta para bloquear un usuario
 router.post('/friends/block/:username', async (req, res) => {
   try {
-    console.log(req.body); // 🔹 Verificar que el frontend está enviando los datos correctamente
-
     const { blockUsername } = req.body;
     const username = req.params.username;
 
@@ -275,11 +274,10 @@ router.post('/friends/block/:username', async (req, res) => {
 
 
 
+
 // Ruta para desbloquear un usuario
 router.post('/friends/unblock/:username', async (req, res) => {
   try {
-    console.log(req.body); // 🔹 Verificar que el frontend está enviando los datos correctamente
-
     const { blockUsername } = req.body;
     const username = req.params.username;
 
@@ -308,12 +306,15 @@ router.post('/friends/unblock/:username', async (req, res) => {
       return res.status(400).json({ message: 'Friendship is not blocked' });
     }
 
-    // Desbloquear la amistad
-    friendship.status = 'accepted'; // o 'pending' según tu lógica
-    friendship.blockReason = null;
-    await friendship.save();
+    // Eliminar la relación de amistad
+    await Friendship.deleteOne({
+      $or: [
+        { requester: user._id, recipient: blockedUser._id },
+        { requester: blockedUser._id, recipient: user._id },
+      ],
+    });
 
-    res.json({ message: 'User unblocked', friendship });
+    res.json({ message: 'User unblocked and friendship removed' });
   } catch (error) {
     res.status(500).json({ message: 'Error unblocking user', error: error.message });
   }
