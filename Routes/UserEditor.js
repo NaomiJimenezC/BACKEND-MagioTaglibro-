@@ -21,8 +21,10 @@ const upload = multer({
   },
 }).single("profileImage");
 
+
+
 // Obtener datos del usuario
-router.get("/:username", async (req, res) => {
+router.get("/:username", verifyUser, async (req, res) => {
   try {
     const user = await User.findOne({ username: req.params.username });
     if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
@@ -101,6 +103,23 @@ router.patch("/:username/update/profile-image", upload, async (req, res) => {
     res.json({ message: "Foto de perfil actualizada", profileImage: user.profileImage });
   } catch (err) {
     res.status(500).json({ message: "Error al actualizar la foto de perfil" });
+  }
+});
+
+// Actualizar lema
+router.patch("/:username/update/motto", async (req, res) => {
+  try {
+    const { motto } = req.body;
+    const user = await User.findOneAndUpdate(
+      { username: req.params.username },
+      { motto },
+      { new: true }
+    );
+    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+
+    res.json({ message: "Lema actualizado correctamente", motto: user.motto });
+  } catch (err) {
+    res.status(500).json({ message: "Error al actualizar el lema" });
   }
 });
 
