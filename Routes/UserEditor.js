@@ -21,19 +21,7 @@ const upload = multer({
   },
 }).single("profileImage");
 
-const verifyUser = async (req, res, next) => {
-  if (!req.userId) return res.status(401).json({ message: "No autorizado" });
 
-  try {
-    const user = await User.findById(req.userId);
-    if (!user || user.username !== req.params.username)
-      return res.status(403).json({ message: "Acceso denegado" });
-
-    next();
-  } catch (err) {
-    res.status(500).json({ message: "Error de autenticación" });
-  }
-};
 
 // Obtener datos del usuario
 router.get("/:username", verifyUser, async (req, res) => {
