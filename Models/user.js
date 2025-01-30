@@ -40,6 +40,10 @@ const userSchema = new Schema({
         year: 'numeric',
       }),
   },
+  profileImage: { // Agregando el campo para la foto de perfil
+    type: String,
+    default: '', // Puede ser vacío por defecto si no se ha subido una imagen
+  },
 });
 
 // Campo virtual para conectar con la tabla Friendship
