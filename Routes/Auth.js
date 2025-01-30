@@ -10,7 +10,7 @@ const router = express.Router();
 
 // Registro
 router.post("/register", async (req, res) => {
-  const { username, password, confirmPassword, email, birthDate } = req.body;
+  const { username, password, confirmPassword, email, birthDate, motto, photo } = req.body;
 
   if (!username || !password || !confirmPassword || !email || !birthDate) {
     return res.status(400).json({ message: "Todos los campos son requeridos" });
@@ -46,18 +46,18 @@ router.post("/register", async (req, res) => {
       email,
       birthDate,
       password: hashedPassword,
+      motto: motto || "", // Asignar valor predeterminado si no se proporciona
+      photo: photo || "", // Asignar valor predeterminado si no se proporciona
     });
 
     await newUser.save();
 
-    // Generar token después del registro
     const token = jwt.sign(
       { id: newUser._id, username: newUser.username },
-      process.env.JWT_SECRET, // Usando la variable desde .env
+      process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
 
-    // Devolver la misma respuesta que en el login
     res.status(201).json({
       message: "Usuario registrado con éxito",
       token,
@@ -66,6 +66,8 @@ router.post("/register", async (req, res) => {
         username: newUser.username,
         email: newUser.email,
         birthDate: newUser.birthDate,
+        motto: newUser.motto, // Incluir el motto
+        photo: newUser.photo, // Incluir la foto
         createdAt: newUser.createdAt,
       }
     });
@@ -74,6 +76,7 @@ router.post("/register", async (req, res) => {
     res.status(500).json({ message: "Error al registrar usuario", error });
   }
 });
+
 
 // Login
 router.post("/login", async (req, res) => {
@@ -102,19 +105,20 @@ router.post("/login", async (req, res) => {
 
     const token = jwt.sign(
       { id: user._id, username: user.username },
-      process.env.JWT_SECRET, // Usando la variable desde .env
+      process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
 
-    // Aquí se agregan los datos completos del usuario en la respuesta
     res.json({
       message: "Inicio de sesión exitoso",
       token,
       user: {
-        id: user._id,       // Se incluye el ID del usuario
+        id: user._id,
         username: user.username,
         email: user.email,
         birthDate: user.birthDate,
+        motto: user.motto, // Incluir el motto
+        photo: user.photo, // Incluir la foto
         createdAt: user.createdAt,
       }
     });
@@ -123,5 +127,6 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ message: "Error al iniciar sesión", error });
   }
 });
+
 
 module.exports = router;
