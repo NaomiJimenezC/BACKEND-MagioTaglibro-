@@ -40,9 +40,13 @@ const userSchema = new Schema({
         year: 'numeric',
       }),
   },
-  profileImage: { // Agregando el campo para la foto de perfil
+  profileImage: { 
     type: String,
-    default: '', // Puede ser vacío por defecto si no se ha subido una imagen
+    default: '', 
+  },
+  motto: { 
+    type: String,
+    default: '', 
   },
 });
 

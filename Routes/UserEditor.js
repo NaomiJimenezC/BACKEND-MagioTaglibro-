@@ -1,6 +1,6 @@
 const express = require('express');
-const multer = require('multer'); //Para gestionar las imagenes
-const sharp = require('sharp');  //Para limitar imagenes
+const multer = require('multer'); // Para gestionar las imágenes
+const sharp = require('sharp');  // Para limitar imágenes
 const path = require('path');
 const User = require('../Models/user');
 const router = express.Router();
@@ -102,6 +102,23 @@ router.put('/update/profile-image', verifyUser, upload, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Error al actualizar la foto de perfil' });
+  }
+});
+
+// Ruta para actualizar el lema
+router.put('/update/motto', verifyUser, async (req, res) => {
+  try {
+    const { motto } = req.body; // El lema que el usuario desea actualizar
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+    
+    user.motto = motto; // Actualiza el lema del usuario
+    await user.save();
+    
+    res.json({ message: 'Lema actualizado correctamente', motto });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error al actualizar el lema' });
   }
 });
 
