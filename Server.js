@@ -20,7 +20,7 @@ app.use('/api/entries',entriesRoutes);
 app.use('/api/users', authRoutes);
 app.use('/api/friendship',friendshipRoutes)
 app.use('/api/contact',contactRoutes)
-app.user('/api/userEditor',userRoutes)
+app.use('/api/userEditor',userRoutes)
 
 // Inicia el servidor
 app.listen(PORT, () => {
