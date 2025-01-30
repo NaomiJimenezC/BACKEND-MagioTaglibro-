@@ -24,7 +24,7 @@ const upload = multer({
 
 
 // Obtener datos del usuario
-router.get("/:username", verifyUser, async (req, res) => {
+router.get("/:username", async (req, res) => {
   try {
     const user = await User.findOne({ username: req.params.username });
     if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
