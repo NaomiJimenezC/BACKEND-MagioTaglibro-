@@ -57,11 +57,11 @@ router.get("/shared-entries/:username", async(req,res)=>{
         const {username} = req.params;
 
         const entries = await Entrada.find({
-            autor_username: username
+            compartido_con: username
         });
 
 
-        res.json();
+        res.json(entries);
     } catch (error) {
         console.error("Error detallado:", error);
         res.status(500).json({ message: "Error al obtener la entrada compartida", error: error.message });
