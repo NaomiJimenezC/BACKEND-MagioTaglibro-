@@ -77,7 +77,7 @@ router.get("/shared-entries/:username/:id", async(req,res)=>{
             return res.status(400).json({ message: "Parámetros inválidos" });
         }
 
-        const entry = await Entrada.findOneById({
+        const entry = await Entrada.findById({
             _id: id
         });
 
