@@ -59,8 +59,6 @@ router.get("/shared-entries/:username", async(req,res)=>{
         const entries = await Entrada.find({
             compartido_con: username
         });
-
-
         res.json(entries);
     } catch (error) {
         console.error("Error detallado:", error);
@@ -68,6 +66,36 @@ router.get("/shared-entries/:username", async(req,res)=>{
     }
     })
 ;
+
+//obtener los datos necesarios de una entrada compartida
+router.get("/shared-entries/:username/:id", async(req,res)=>{
+    try {
+        const {username, id} = req.params;
+
+        // Validaciones
+        if (!id || !username) {
+            return res.status(400).json({ message: "Parámetros inválidos" });
+        }
+
+        const entry = await Entrada.findOne({
+            _id: id,
+            compartido_con: username
+        });
+
+        // Manejo de entrada no encontrada
+        if (!entry) {
+            return res.status(404).json({ message: "Entrada no encontrada" });
+        }
+
+        res.json(entry);
+    } catch (error) {
+        console.error("Error detallado:", error);
+        res.status(500).json({ 
+            message: "Error al obtener la entrada compartida", 
+            error: error.message 
+        });
+    }
+});
 
 
 //actualiza la lista de usuarios compartidos
