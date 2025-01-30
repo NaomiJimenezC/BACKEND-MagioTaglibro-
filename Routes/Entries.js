@@ -49,28 +49,26 @@ router.get("/:username/latest", async (req, res) => {
     }
 });
 
-//recuperar una entrada compartida
 
-router.get("/shared-entries/:id_entry",async(req,res)=>{
-    try{
-        const {id_entry} = req.params
+//recuperar todas las entradas compartidas de un usuario (hacia ese usuario)
 
-        const entrada = await Entrada.findById(id_entry)
+router.get("/shared-entries/:username", async(req,res)=>{
+    try {
+        const {username} = req.params;
 
-        const sharedUsers = entrada.compartido_con || []
-
-        res.status(200).json({
-            message: "Usuarios con quienes se ha compartido la entrada obtenidos con éxito",
-            sharedUsers
+        const entries = await Entrada.find({
+            autor_username: username
         });
+
+
+        res.json();
+    } catch (error) {
+        console.error("Error detallado:", error);
+        res.status(500).json({ message: "Error al obtener la entrada compartida", error: error.message });
     }
-    catch(error){
-        console.error("Error al obtener usuarios compartidos:", error);
-        res.status(500).json({ message: "Error interno del servidor" });
-    
-    }
-})
-//puedo simplemente pasar la lista de compartidos no?
+    })
+;
+
 
 //actualiza la lista de usuarios compartidos
 router.patch("/shared-entries/:id_entry", async (req, res) => {
@@ -98,23 +96,6 @@ router.patch("/shared-entries/:id_entry", async (req, res) => {
         res.status(500).json({ message: "Error al actualizar la entrada compartida", error: error.message });
     }
 });
-
-//recuperar todas las entradas compartidas de un usuario (hacia ese usuario)
-
-router.get("/shared-entries/:username/", async(req,res)=>{
-    try {
-        const {username} = req.params;
-
-        const entry = await Entrada.find({
-            compartido_con: { $in: [username] }
-        });
-
-        res.json(entry);
-    } catch (error) {
-        res.status(500).json({ message: "Error al obtener la entrada compartida", error: error.message });
-    }})
-;
-
 //recuperar la entrada
 
 router.get("/:username/:id", async (req, res) => {
@@ -128,7 +109,7 @@ router.get("/:username/:id", async (req, res) => {
 
         res.json(entrada);
     } catch (error) {
-        if (error.kind === 'ObjectId') {
+        if (error.kind === 'username') {
             return res.status(400).json({ message: "ID de entrada inválido" });
         }
         res.status(500).json({ message: "Error al recuperar la entrada", error: error.message });
