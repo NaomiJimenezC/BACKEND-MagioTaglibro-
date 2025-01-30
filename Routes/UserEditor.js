@@ -1,6 +1,6 @@
 const express = require('express');
-const multer = require('multer');
-const sharp = require('sharp');
+const multer = require('multer'); //Para gestionar las imagenes
+const sharp = require('sharp');  //Para limitar imagenes
 const path = require('path');
 const User = require('../Models/user');
 const router = express.Router();
