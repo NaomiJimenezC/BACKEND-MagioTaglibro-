@@ -105,7 +105,7 @@ router.patch("/shared-entries/:id_entry", async (req, res) => {
         const { shared_usernames } = req.body;
         console.log(shared_usernames);
         // Validamos que shared_usernames sea un array no vacío
-        if (!Array.isArray(shared_usernames) || shared_usernames.length === 0) {
+        if (!Array.isArray(shared_usernames)) {
             return res.status(400).json({ message: "Se debe compartir con al menos un usuario" });
         }
 
