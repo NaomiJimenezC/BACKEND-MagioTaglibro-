@@ -148,11 +148,11 @@ router.get("/:username/:id", async (req, res) => {
 router.patch("/shared-entries/:id_entry/:shared_username", async (req, res) => {
     try {
         const { shared_username, id_entry } = req.params;
+        console.log(shared_username)
 
-        const updatedEntry = await Entrada.findByIdAndUpdate(
-            id_entry,
+        const updatedEntry = await Entrada.findOneAndUpdate(
+            {_id : id_entry},
             { $addToSet: { compartido_con: shared_username } },
-            { new: true }
         );
 
         if (!updatedEntry) {
@@ -202,5 +202,27 @@ router.post("/new", async (req, res) => {
     }
 });
 
+
+router.delete("/delete/:id_entry", async (req, res) => {
+    const { id_entry } = req.params;
+
+    try {
+        // Verificar si el id_entry existe
+        if (!id_entry) {
+            return res.status(400).json({ message: "ID de entrada no proporcionado" });
+        }
+
+        const deletedEntry = await Entrada.findByIdAndDelete(id_entry);
+
+        if (!deletedEntry) {
+            return res.status(404).json({ message: "Entrada no encontrada" });
+        }
+
+        res.status(200).json({ message: "Entrada eliminada con éxito", deletedEntry });
+    } catch (error) {
+        console.error("Error al borrar la entrada:", error);
+        res.status(500).json({ message: "Error al borrar la entrada", error: error.message });
+    }
+});
 
 module.exports = router;
