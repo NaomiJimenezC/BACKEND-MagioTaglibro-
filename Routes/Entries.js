@@ -152,7 +152,7 @@ router.patch("/shared-entries/:id_entry/:shared_username", async (req, res) => {
 
         const updatedEntry = await Entrada.findOneAndUpdate(
             {_id : id_entry},
-            { $addToSet: { compartido_con: shared_username } },
+            { $set: {compartido_con: shared_username}  },
         );
 
         if (!updatedEntry) {
