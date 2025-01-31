@@ -111,7 +111,7 @@ router.patch("/shared-entries/:id_entry", async (req, res) => {
 
         const updatedEntry = await Entrada.findByIdAndUpdate(
             id_entry,
-            { $set: { compartido_con: { $each: shared_usernames } } },
+            { $set: { compartido_con: shared_usernames  } },
             { new: true }
         );
 
