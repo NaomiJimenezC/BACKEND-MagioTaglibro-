@@ -4,6 +4,7 @@ const sharp = require("sharp");
 const path = require("path");
 const fs = require("fs");
 const User = require("../Models/user");
+const { console } = require("inspector/promises");
 const router = express.Router();
 
 // Configuración de Multer para cargar imágenes
@@ -110,8 +111,11 @@ router.patch("/:username/update/profile-image", upload, async (req, res) => {
     const user = await User.findOneAndUpdate(
       { username: req.params.username },
       { profileImage: `uploads/${path.basename(outputPath)}` },
-      { new: true }
+      { new: true },
+
     );
+    console.log("Mira esto de abajo \n")
+    console.log(path)
     if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
 
     // Devolver la nueva ruta de la imagen de perfil
