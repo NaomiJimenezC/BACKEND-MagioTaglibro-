@@ -146,4 +146,21 @@ router.patch("/:username/update/motto", async (req, res) => {
   }
 });
 
+// Ruta para obtener la imagen de perfil por ID del usuario
+router.get("/:userId/profile-image", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId); // Buscar por ID de usuario
+    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+
+    const imagePath = path.join(__dirname, "../uploads", `${user._id}.webp`); // Ruta completa a la imagen
+
+    if (!fs.existsSync(imagePath)) return res.status(404).json({ message: "Imagen no encontrada" });
+
+    res.sendFile(imagePath); // Enviar la imagen
+  } catch (err) {
+    res.status(500).json({ message: "Error al obtener la imagen de perfil" });
+  }
+});
+
+
 module.exports = router;
