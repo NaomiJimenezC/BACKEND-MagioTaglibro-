@@ -66,8 +66,8 @@ router.post("/register", async (req, res) => {
         username: newUser.username,
         email: newUser.email,
         birthDate: newUser.birthDate,
-        motto: newUser.motto, // Incluir el motto
-        photo: newUser.photo, // Incluir la foto
+        motto: newUser.motto, 
+        photo: newUser.profileImage, 
         createdAt: newUser.createdAt,
       }
     });
@@ -117,8 +117,8 @@ router.post("/login", async (req, res) => {
         username: user.username,
         email: user.email,
         birthDate: user.birthDate,
-        motto: user.motto, // Incluir el motto
-        photo: user.photo, // Incluir la foto
+        motto: user.motto, 
+        photo: user.profileImage, 
         createdAt: user.createdAt,
       }
     });
