@@ -97,7 +97,12 @@ router.patch("/:username/update/profile-image", upload, async (req, res) => {
     if (!req.file) return res.status(400).json({ message: "No se ha subido ninguna imagen" });
 
     const inputPath = req.file.path; // Ruta original del archivo subido
-    const outputPath = path.join(__dirname, "../uploads", `${Date.now()}.webp`); // Nueva ruta con nombre único
+    const user = await User.findOne({ username: req.params.username }); // Buscar al usuario
+
+    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+
+    // Usar el ID del usuario como nombre del archivo
+    const outputPath = path.join(__dirname, "../uploads", `${user._id}.webp`); // Usar el _id del usuario
 
     // Convertir la imagen a WebP y guardarla
     await sharp(inputPath)
@@ -108,15 +113,8 @@ router.patch("/:username/update/profile-image", upload, async (req, res) => {
     fs.unlinkSync(inputPath);
 
     // Actualizar la ruta de la imagen de perfil en el modelo de usuario
-    const user = await User.findOneAndUpdate(
-      { username: req.params.username },
-      { profileImage: `uploads/${path.basename(outputPath)}` },
-      { new: true },
-
-    );
-    console.log("Mira esto de abajo \n")
-    console.log(path)
-    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+    user.profileImage = `uploads/${path.basename(outputPath)}`;
+    await user.save();
 
     // Devolver la nueva ruta de la imagen de perfil
     res.json({
@@ -128,6 +126,7 @@ router.patch("/:username/update/profile-image", upload, async (req, res) => {
     res.status(500).json({ message: "Error al actualizar la foto de perfil" });
   }
 });
+
 
 
 // Actualizar lema
