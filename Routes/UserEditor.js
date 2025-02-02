@@ -1,31 +1,39 @@
+/**
+ * @file Este archivo contiene las rutas relacionadas con la gestión de usuarios, incluyendo
+ * la actualización de datos personales, imágenes de perfil y obtención de información del usuario.
+ */
+
 const express = require("express");
 const multer = require("multer");
 const sharp = require("sharp");
 const path = require("path");
 const fs = require("fs");
 const User = require("../Models/user");
-const { console } = require("inspector/promises");
 const router = express.Router();
 
 // Configuración de Multer para cargar imágenes
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => cb(null, "./uploads"),
-    filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname)),  // Usar extensión original
+    filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname)), // Usar extensión original
   }),
   limits: { fileSize: 2 * 1024 * 1024 }, // Limitar el tamaño a 2MB
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png/;
     const isValid =
-      allowedTypes.test(path.extname(file.originalname).toLowerCase()) &&
-      allowedTypes.test(file.mimetype);
+        allowedTypes.test(path.extname(file.originalname).toLowerCase()) &&
+        allowedTypes.test(file.mimetype);
     if (!isValid) return cb(new Error("Tipo de archivo no permitido"));
     cb(null, true);
   },
 }).single("profileImage");
 
-
-// Obtener datos del usuario
+/**
+ * @route GET /:username
+ * @description Obtiene los datos del usuario por su nombre de usuario.
+ * @param {string} username - Nombre de usuario.
+ * @returns {Object} Datos del usuario o un mensaje de error si no se encuentra.
+ */
 router.get("/:username", async (req, res) => {
   try {
     const user = await User.findOne({ username: req.params.username });
@@ -36,14 +44,19 @@ router.get("/:username", async (req, res) => {
   }
 });
 
-// Actualizar nombre de usuario
+/**
+ * @route PATCH /:username/update/username
+ * @description Actualiza el nombre de usuario.
+ * @param {string} username - Nuevo nombre de usuario.
+ * @returns {Object} Mensaje de éxito o error.
+ */
 router.patch("/:username/update/username", async (req, res) => {
   try {
     const { username } = req.body;
     const user = await User.findOneAndUpdate(
-      { username: req.params.username },
-      { username },
-      { new: true }
+        { username: req.params.username },
+        { username },
+        { new: true }
     );
     if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
 
@@ -53,14 +66,19 @@ router.patch("/:username/update/username", async (req, res) => {
   }
 });
 
-// Actualizar correo electrónico
+/**
+ * @route PATCH /:username/update/email
+ * @description Actualiza el correo electrónico del usuario.
+ * @param {string} email - Nuevo correo electrónico.
+ * @returns {Object} Mensaje de éxito o error.
+ */
 router.patch("/:username/update/email", async (req, res) => {
   try {
     const { email } = req.body;
     const user = await User.findOneAndUpdate(
-      { username: req.params.username },
-      { email },
-      { new: true }
+        { username: req.params.username },
+        { email },
+        { new: true }
     );
     if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
 
@@ -70,14 +88,19 @@ router.patch("/:username/update/email", async (req, res) => {
   }
 });
 
-// Actualizar fecha de nacimiento
+/**
+ * @route PATCH /:username/update/birthdate
+ * @description Actualiza la fecha de nacimiento del usuario.
+ * @param {string} birthDate - Nueva fecha de nacimiento en formato ISO.
+ * @returns {Object} Mensaje de éxito o error.
+ */
 router.patch("/:username/update/birthdate", async (req, res) => {
   try {
     const { birthDate } = req.body;
     const user = await User.findOneAndUpdate(
-      { username: req.params.username },
-      { birthDate },
-      { new: true }
+        { username: req.params.username },
+        { birthDate },
+        { new: true }
     );
     if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
 
@@ -91,7 +114,12 @@ router.patch("/:username/update/birthdate", async (req, res) => {
 const uploadDir = path.join(__dirname, "../uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
-// Ruta para actualizar la foto de perfil
+/**
+ * @route PATCH /:username/update/profile-image
+ * @description Actualiza la foto de perfil del usuario y la convierte a formato WebP.
+ * @param {File} profileImage - Imagen subida por el usuario.
+ * @returns {Object} Mensaje de éxito y ruta de la nueva imagen o un mensaje de error.
+ */
 router.patch("/:username/update/profile-image", upload, async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: "No se ha subido ninguna imagen" });
@@ -106,8 +134,8 @@ router.patch("/:username/update/profile-image", upload, async (req, res) => {
 
     // Convertir la imagen a WebP y guardarla
     await sharp(inputPath)
-      .webp({ quality: 80 })  // Establecemos calidad al 80%
-      .toFile(outputPath);
+        .webp({ quality: 80 }) // Establecemos calidad al 80%
+        .toFile(outputPath);
 
     // Eliminar el archivo original después de la conversión
     fs.unlinkSync(inputPath);
@@ -119,7 +147,7 @@ router.patch("/:username/update/profile-image", upload, async (req, res) => {
     // Devolver la nueva ruta de la imagen de perfil
     res.json({
       message: "Foto de perfil actualizada",
-      profileImage: user.profileImage,  // Enviar la ruta de la nueva imagen
+      profileImage: user.profileImage,
     });
   } catch (err) {
     console.error("Error al actualizar la imagen:", err);
@@ -127,16 +155,19 @@ router.patch("/:username/update/profile-image", upload, async (req, res) => {
   }
 });
 
-
-
-// Actualizar lema
+/**
+ * @route PATCH /:username/update/motto
+ * @description Actualiza el lema del usuario.
+ * @param {string} motto - Nuevo lema del usuario.
+ * @returns {Object} Mensaje de éxito o error.
+ */
 router.patch("/:username/update/motto", async (req, res) => {
   try {
     const { motto } = req.body;
     const user = await User.findOneAndUpdate(
-      { username: req.params.username },
-      { motto },
-      { new: true }
+        { username: req.params.username },
+        { motto },
+        { new: true }
     );
     if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
 
@@ -146,7 +177,12 @@ router.patch("/:username/update/motto", async (req, res) => {
   }
 });
 
-// Ruta para obtener la imagen de perfil por ID del usuario
+/**
+ * @route GET /:userId/profile-image
+ * @description Obtiene la imagen de perfil del usuario por su ID.
+ * @param {string} userId - ID único del usuario en MongoDB.
+ * @returns {File} Imagen en formato WebP o mensaje si no se encuentra.
+ */
 router.get("/:userId/profile-image", async (req, res) => {
   try {
     const user = await User.findById(req.params.userId); // Buscar por ID de usuario
@@ -161,6 +197,5 @@ router.get("/:userId/profile-image", async (req, res) => {
     res.status(500).json({ message: "Error al obtener la imagen de perfil" });
   }
 });
-
 
 module.exports = router;

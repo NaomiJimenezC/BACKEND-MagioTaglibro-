@@ -1,10 +1,24 @@
+/**
+ * @file Gestión de relaciones de amistad entre usuarios.
+ * Este archivo contiene las rutas para manejar solicitudes de amistad, aceptación, rechazo,
+ * cancelación, bloqueo y eliminación de amigos.
+ */
+
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const Friendship = require('../Models/friendship');
 const User = require('../Models/user');
 
-
+/**
+ * Valida si los nombres de usuario existen en la base de datos.
+ * @async
+ * @function validateUsernames
+ * @param {string} username - Nombre de usuario del solicitante.
+ * @param {string} friendUsername - Nombre de usuario del destinatario.
+ * @returns {Promise<Array>} IDs de los usuarios solicitante y destinatario.
+ * @throws {Error} Si uno o ambos usuarios no existen.
+ */
 const validateUsernames = async (username, friendUsername) => {
   const [requester, recipient] = await Promise.all([
     User.findOne({ username: username }),
@@ -18,7 +32,12 @@ const validateUsernames = async (username, friendUsername) => {
   return [requester._id, recipient._id];
 };
 
-// Ruta para obtener la lista de amigos de un usuario
+/**
+ * @route GET /friends/:username
+ * @description Obtiene la lista de amigos aceptados de un usuario.
+ * @param {string} username - Nombre de usuario del solicitante.
+ * @returns {Object} Lista de amigos con sus datos básicos.
+ */
 router.get('/friends/:username', async (req, res) => {
   try {
     const username = req.params.username;
@@ -33,8 +52,8 @@ router.get('/friends/:username', async (req, res) => {
     }).populate('requester recipient', 'username email');
 
     const friends = friendships
-      .filter((f) => f.status === 'accepted')
-      .map((f) => (f.requester._id.equals(user._id) ? f.recipient : f.requester));
+        .filter((f) => f.status === 'accepted')
+        .map((f) => (f.requester._id.equals(user._id) ? f.recipient : f.requester));
 
     res.json({ friends });
   } catch (error) {
@@ -42,7 +61,12 @@ router.get('/friends/:username', async (req, res) => {
   }
 });
 
-// Ruta para obtener las solicitudes de amistad entrantes
+/**
+ * @route GET /friends/incoming/:username
+ * @description Obtiene las solicitudes de amistad entrantes pendientes.
+ * @param {string} username - Nombre de usuario del destinatario.
+ * @returns {Object} Lista de solicitudes entrantes.
+ */
 router.get('/friends/incoming/:username', async (req, res) => {
   try {
     const username = req.params.username;
@@ -55,7 +79,7 @@ router.get('/friends/incoming/:username', async (req, res) => {
     const incomingRequests = await Friendship.find({
       recipient: user._id,
       status: 'pending',
-    }).populate('requester', 'username email'); // Trae los datos del solicitante
+    }).populate('requester', 'username email');
 
     res.json({ incomingRequests });
   } catch (error) {
@@ -63,7 +87,12 @@ router.get('/friends/incoming/:username', async (req, res) => {
   }
 });
 
-// Ruta para obtener las solicitudes de amistad pendientes enviadas
+/**
+ * @route GET /friends/pending/:username
+ * @description Obtiene las solicitudes de amistad pendientes enviadas por el usuario.
+ * @param {string} username - Nombre de usuario del solicitante.
+ * @returns {Object} Lista de solicitudes pendientes enviadas.
+ */
 router.get('/friends/pending/:username', async (req, res) => {
   try {
     const username = req.params.username;
@@ -76,7 +105,7 @@ router.get('/friends/pending/:username', async (req, res) => {
     const pendingRequests = await Friendship.find({
       requester: user._id,
       status: 'pending',
-    }).populate('recipient', 'username email'); // Trae los datos del destinatario
+    }).populate('recipient', 'username email');
 
     res.json({ pendingRequests });
   } catch (error) {
@@ -84,30 +113,13 @@ router.get('/friends/pending/:username', async (req, res) => {
   }
 });
 
-// Ruta para obtener la lista de usuarios bloqueados (No funciona)
-router.get('/friends/blocked/:username', async (req, res) => {
-  try {
-    const username = req.params.username;
-    const user = await User.findOne({ username: username });
-
-    if (!user) {
-      return res.status(400).json({ message: 'User not found' });
-    }
-
-    const friendships = await Friendship.find({
-      $or: [{ requester: user._id }, { recipient: user._id }],
-      status: 'blocked',
-    }).populate('requester recipient', 'username email');
-
-    const blockedUsers = friendships.map((f) => (f.requester._id.equals(user._id) ? f.recipient : f.requester));
-
-    res.json({ blockedUsers });
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching blocked users list', error: error.message });
-  }
-});
-
-// Ruta para enviar solicitud de amistad
+/**
+ * @route POST /friends/request/:username
+ * @description Envía una solicitud de amistad a otro usuario.
+ * @param {string} username - Nombre de usuario del solicitante.
+ * @param {string} friendUsername - Nombre de usuario del destinatario.
+ * @returns {Object} Mensaje y detalles de la solicitud creada.
+ */
 router.post('/friends/request/:username', async (req, res) => {
   try {
     const { friendUsername } = req.body;
@@ -134,7 +146,13 @@ router.post('/friends/request/:username', async (req, res) => {
   }
 });
 
-// Ruta para aceptar solicitud de amistad
+/**
+ * @route POST /friends/accept/:username
+ * @description Acepta una solicitud de amistad pendiente.
+ * @param {string} username - Nombre de usuario del destinatario que acepta la solicitud.
+ * @param {string} friendUsername - Nombre del solicitante original.
+ * @returns {Object} Mensaje y detalles de la relación actualizada.
+ */
 router.post('/friends/accept/:username', async (req, res) => {
   try {
     const { friendUsername } = req.body;
@@ -160,13 +178,19 @@ router.post('/friends/accept/:username', async (req, res) => {
   }
 });
 
-// ruta para rechazar amistad
+/**
+ * @route POST /friends/reject/:username
+ * @description Rechaza una solicitud de amistad pendiente y la elimina.
+ * @param {string} username - Nombre del destinatario que rechaza la solicitud.
+ * @param {string} friendUsername - Nombre del solicitante original.
+ * @returns {Object} Mensaje confirmando el rechazo y eliminación.
+ */
 router.post('/friends/reject/:username', async (req, res) => {
   try {
-    const { friendUsername, rejectionReason } = req.body;
+    const { friendUsername } = req.body;
     const username = req.params.username;
 
-    // Buscar usuarios por username
+    // Buscar usuarios por nombre
     const user = await User.findOne({ username });
     const friend = await User.findOne({ username: friendUsername });
 
@@ -174,9 +198,9 @@ router.post('/friends/reject/:username', async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Buscar la solicitud de amistad pendiente
+    // Buscar la solicitud pendiente
     const friendship = await Friendship.findOne({
-      requester: friend._id, // Ahora se usa el ID del usuario encontrado
+      requester: friend._id,
       recipient: user._id,
       status: 'pending',
     });
@@ -185,7 +209,7 @@ router.post('/friends/reject/:username', async (req, res) => {
       return res.status(404).json({ message: 'Friend request not found' });
     }
 
-    // Eliminar la solicitud de amistad
+    // Eliminar la solicitud
     await friendship.deleteOne();
 
     res.json({ message: 'Friend request rejected and deleted' });
@@ -193,9 +217,13 @@ router.post('/friends/reject/:username', async (req, res) => {
     res.status(500).json({ message: 'Error rejecting and deleting friend request', error: error.message });
   }
 });
-
-
-// Ruta para cancelar solicitud de amistad
+/**
+ * @route POST /friends/cancel/:username
+ * @description Cancela una solicitud de amistad enviada por el usuario.
+ * @param {string} username - Nombre del usuario que cancela la solicitud.
+ * @param {string} friendUsername - Nombre del destinatario de la solicitud.
+ * @returns {Object} Mensaje indicando el éxito o error de la cancelación.
+ */
 router.post('/friends/cancel/:username', async (req, res) => {
   try {
     const { friendUsername } = req.body;
@@ -211,7 +239,7 @@ router.post('/friends/cancel/:username', async (req, res) => {
 
     // Buscar la solicitud de amistad pendiente
     const friendship = await Friendship.findOne({
-      requester: user._id, // Ahora se usa el ID del usuario encontrado
+      requester: user._id,
       recipient: friend._id,
       status: 'pending',
     });
@@ -229,8 +257,14 @@ router.post('/friends/cancel/:username', async (req, res) => {
   }
 });
 
-
-// ruta para bloquear un usuario
+/**
+ * @route POST /friends/block/:username
+ * @description Bloquea a un usuario, marcando la relación como "bloqueada".
+ * Si no existe una relación previa, se crea una nueva con estado "bloqueado".
+ * @param {string} username - Nombre del usuario que bloquea.
+ * @param {string} blockUsername - Nombre del usuario a bloquear.
+ * @returns {Object} Mensaje indicando el éxito o error del bloqueo.
+ */
 router.post('/friends/block/:username', async (req, res) => {
   try {
     const { blockUsername } = req.body;
@@ -252,17 +286,14 @@ router.post('/friends/block/:username', async (req, res) => {
       ],
     });
 
-    // Si ya está bloqueado, avisar en lugar de bloquear de nuevo
     if (friendship && friendship.status === 'blocked') {
       return res.status(400).json({ message: 'User is already blocked' });
     }
 
-    // Si no existe, crearla
     if (!friendship) {
       friendship = new Friendship({ requester: user._id, recipient: blockedUser._id });
     }
 
-    // Bloquear la amistad
     friendship.status = 'blocked';
     await friendship.save();
 
@@ -272,10 +303,13 @@ router.post('/friends/block/:username', async (req, res) => {
   }
 });
 
-
-
-
-// Ruta para desbloquear un usuario
+/**
+ * @route POST /friends/unblock/:username
+ * @description Desbloquea a un usuario y elimina la relación de amistad.
+ * @param {string} username - Nombre del usuario que desbloquea.
+ * @param {string} blockUsername - Nombre del usuario a desbloquear.
+ * @returns {Object} Mensaje indicando el éxito o error del desbloqueo.
+ */
 router.post('/friends/unblock/:username', async (req, res) => {
   try {
     const { blockUsername } = req.body;
@@ -289,15 +323,14 @@ router.post('/friends/unblock/:username', async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Buscar la amistad bloqueada
     const friendship = await Friendship.findOne({
       $or: [
         { requester: user._id, recipient: blockedUser._id },
         { requester: blockedUser._id, recipient: user._id },
       ],
+      status: 'blocked',
     });
 
-    // Verificar si la relación está realmente bloqueada
     if (!friendship) {
       return res.status(404).json({ message: 'Friendship not found' });
     }
@@ -306,7 +339,6 @@ router.post('/friends/unblock/:username', async (req, res) => {
       return res.status(400).json({ message: 'Friendship is not blocked' });
     }
 
-    // Eliminar la relación de amistad
     await Friendship.deleteOne({
       $or: [
         { requester: user._id, recipient: blockedUser._id },
@@ -320,9 +352,13 @@ router.post('/friends/unblock/:username', async (req, res) => {
   }
 });
 
-
-
-// Ruta para eliminar amigo
+/**
+ * @route DELETE /friends/remove/:username
+ * @description Elimina a un amigo aceptado y borra la relación de amistad.
+ * @param {string} username - Nombre del usuario que elimina al amigo.
+ * @param {string} friendUsername - Nombre del amigo que será eliminado.
+ * @returns {Object} Mensaje indicando el éxito o error de la eliminación.
+ */
 router.delete('/friends/remove/:username', async (req, res) => {
   try {
     const { friendUsername } = req.body;
@@ -336,7 +372,6 @@ router.delete('/friends/remove/:username', async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Buscar la relación de amistad con estado 'accepted'
     const friendship = await Friendship.findOne({
       $or: [
         { requester: user._id, recipient: friend._id },
@@ -349,7 +384,6 @@ router.delete('/friends/remove/:username', async (req, res) => {
       return res.status(404).json({ message: 'Friendship not found' });
     }
 
-    // Eliminar la relación de amistad
     await friendship.deleteOne();
 
     res.json({ message: 'Friend removed successfully' });
@@ -358,5 +392,3 @@ router.delete('/friends/remove/:username', async (req, res) => {
   }
 });
 
-
-module.exports = router;

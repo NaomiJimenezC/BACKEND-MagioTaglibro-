@@ -1,3 +1,8 @@
+/**
+ * @file Gestión de autenticación de usuarios.
+ * Este archivo contiene las rutas para registrar y autenticar usuarios.
+ */
+
 require('dotenv').config();
 
 const express = require("express");
@@ -8,7 +13,18 @@ const validator = require("validator");
 
 const router = express.Router();
 
-// Registro
+/**
+ * @route POST /register
+ * @description Registra un nuevo usuario en la aplicación.
+ * @param {string} username - Nombre de usuario único.
+ * @param {string} password - Contraseña del usuario.
+ * @param {string} confirmPassword - Confirmación de la contraseña.
+ * @param {string} email - Correo electrónico del usuario.
+ * @param {Date} birthDate - Fecha de nacimiento del usuario.
+ * @param {string} [motto] - Lema personal del usuario (opcional).
+ * @param {string} [photo] - URL de la foto de perfil del usuario (opcional).
+ * @returns {Object} Mensaje de éxito, token JWT y detalles del usuario registrado.
+ */
 router.post("/register", async (req, res) => {
   const { username, password, confirmPassword, email, birthDate, motto, photo } = req.body;
 
@@ -46,16 +62,16 @@ router.post("/register", async (req, res) => {
       email,
       birthDate,
       password: hashedPassword,
-      motto: motto || "", // Asignar valor predeterminado si no se proporciona
-      photo: photo || "", // Asignar valor predeterminado si no se proporciona
+      motto: motto || "",
+      photo: photo || "",
     });
 
     await newUser.save();
 
     const token = jwt.sign(
-      { id: newUser._id, username: newUser.username },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
+        { id: newUser._id, username: newUser.username },
+        process.env.JWT_SECRET,
+        { expiresIn: "1h" }
     );
 
     res.status(201).json({
@@ -66,8 +82,8 @@ router.post("/register", async (req, res) => {
         username: newUser.username,
         email: newUser.email,
         birthDate: newUser.birthDate,
-        motto: newUser.motto, 
-        photo: newUser.profileImage, 
+        motto: newUser.motto,
+        photo: newUser.photo,
         createdAt: newUser.createdAt,
       }
     });
@@ -77,8 +93,13 @@ router.post("/register", async (req, res) => {
   }
 });
 
-
-// Login
+/**
+ * @route POST /login
+ * @description Autentica a un usuario existente y genera un token JWT.
+ * @param {string} username - Nombre de usuario o correo electrónico del usuario.
+ * @param {string} password - Contraseña del usuario.
+ * @returns {Object} Mensaje de éxito, token JWT y detalles del usuario autenticado.
+ */
 router.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
@@ -104,9 +125,9 @@ router.post("/login", async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user._id, username: user.username },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
+        { id: user._id, username: user.username },
+        process.env.JWT_SECRET,
+        { expiresIn: "1h" }
     );
 
     res.json({
@@ -117,8 +138,8 @@ router.post("/login", async (req, res) => {
         username: user.username,
         email: user.email,
         birthDate: user.birthDate,
-        motto: user.motto, 
-        photo: user.profileImage, 
+        motto: user.motto,
+        photo: user.photo,
         createdAt: user.createdAt,
       }
     });
@@ -127,6 +148,5 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ message: "Error al iniciar sesión", error });
   }
 });
-
 
 module.exports = router;

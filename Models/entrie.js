@@ -35,7 +35,6 @@ const entradaSchema = new Schema({
     },
     compartido_con: [{
         type: String,
-        ref: 'User'
     }],
     chat: {
         fecha_creacion: {
