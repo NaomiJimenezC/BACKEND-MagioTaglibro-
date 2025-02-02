@@ -90,7 +90,7 @@ router.patch("/:username/update/profile-image", upload, async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: "No se ha subido ninguna imagen" });
 
-    const filePath = path.join(__dirname, "../uploads", req.file.filename);
+    const filePath = path.join(__dirname, "../Uploads", req.file.filename);
     await sharp(filePath).webp().toFile(filePath);
 
     const user = await User.findOneAndUpdate(
