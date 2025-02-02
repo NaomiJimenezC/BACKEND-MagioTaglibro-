@@ -1,4 +1,4 @@
-require('dotenv').config();
+require("dotenv").config();
 
 const express = require("express");
 const bcrypt = require("bcrypt");
@@ -46,8 +46,8 @@ router.post("/register", async (req, res) => {
       email,
       birthDate,
       password: hashedPassword,
-      motto: motto || "", // Asignar valor predeterminado si no se proporciona
-      photo: photo || "", // Asignar valor predeterminado si no se proporciona
+      motto: motto || "", 
+      photo: photo || "", 
     });
 
     await newUser.save();
@@ -58,25 +58,19 @@ router.post("/register", async (req, res) => {
       { expiresIn: "1h" }
     );
 
-    res.status(201).json({
-      message: "Usuario registrado con éxito",
-      token,
-      user: {
-        id: newUser._id,
-        username: newUser.username,
-        email: newUser.email,
-        birthDate: newUser.birthDate,
-        motto: newUser.motto, 
-        photo: newUser.profileImage, 
-        createdAt: newUser.createdAt,
-      }
+    res.cookie("authToken", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 3600000, // 1 hora
     });
+
+    res.status(201).json({ message: "Usuario registrado con éxito" });
   } catch (error) {
     console.error("Error al registrar usuario:", error);
-    res.status(500).json({ message: "Error al registrar usuario", error });
+    res.status(500).json({ message: "Error al registrar usuario" });
   }
 });
-
 
 // Login
 router.post("/login", async (req, res) => {
@@ -109,24 +103,43 @@ router.post("/login", async (req, res) => {
       { expiresIn: "1h" }
     );
 
-    res.json({
-      message: "Inicio de sesión exitoso",
-      token,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        birthDate: user.birthDate,
-        motto: user.motto, 
-        photo: user.profileImage, 
-        createdAt: user.createdAt,
-      }
+    res.cookie("authToken", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 3600000, // 1 hora
     });
+
+    res.json({ message: "Inicio de sesión exitoso" });
   } catch (error) {
     console.error("Error al iniciar sesión:", error);
-    res.status(500).json({ message: "Error al iniciar sesión", error });
+    res.status(500).json({ message: "Error al iniciar sesión" });
   }
 });
 
+// Middleware para autenticar usuarios usando la cookie
+const authMiddleware = (req, res, next) => {
+  const token = req.cookies.authToken;
+  if (!token) return res.status(401).json({ message: "No autorizado" });
 
-module.exports = router;
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch {
+    return res.status(403).json({ message: "Token inválido" });
+  }
+};
+
+// Endpoint para obtener datos del usuario autenticado
+router.get("/:username/me", authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+    res.json(user);
+  } catch (error) { console.error("Error al obtener datos del usuario:", error); res.status(500).json({ message: "Error al obtener datos del usuario" }); } });
+
+  // Cerrar sesión 
+  router.post("/logout", (req, res) => { res.clearCookie("authToken", { httpOnly: true, sameSite: "Strict", secure: process.env.NODE_ENV === "production" }); res.json({ message: "Sesión cerrada" }); });
+  
+  module.exports = router;
