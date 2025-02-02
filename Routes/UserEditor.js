@@ -1,126 +1,125 @@
-const express = require("express");
-const multer = require("multer");
-const sharp = require("sharp");
-const path = require("path");
-const User = require("../Models/user");
-const router = express.Router();
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-const upload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => cb(null, "./uploads"),
-    filename: (req, file, cb) => cb(null, Date.now() + ".webp"),
-  }),
-  limits: { fileSize: 2 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png/;
-    const isValid =
-      allowedTypes.test(path.extname(file.originalname).toLowerCase()) &&
-      allowedTypes.test(file.mimetype);
-    if (!isValid) return cb(new Error("Tipo de archivo no permitido"));
-    cb(null, true);
-  },
-}).single("profileImage");
+const ProfileEditor = ({ user, onSave }) => {
+  const [username, setUsername] = useState(user.username || "");
+  const [email, setEmail] = useState(user.email || "");
+  const [birthday, setBirthday] = useState(user.birthday || "");
+  const [motto, setMotto] = useState(user.motto || "");
+  const [profileImage, setProfileImage] = useState(null);
+  const [profileImagePreview, setProfileImagePreview] = useState(user.profileImage || "");
+  const [imageError, setImageError] = useState("");
+  const navigate = useNavigate();
 
+  const handleLogoutAndRedirect = () => {
+    localStorage.clear();
+    navigate("/login");
+  };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        setImageError("El tamaño de la imagen no puede ser mayor a 2MB.");
+        setProfileImage(null);
+        setProfileImagePreview("");
+      } else if (!file.type.startsWith('image/')) {
+        setImageError("El archivo debe ser una imagen.");
+        setProfileImage(null);
+        setProfileImagePreview("");
+      } else {
+        setImageError("");
+        setProfileImage(file);
+        setProfileImagePreview(URL.createObjectURL(file));
+      }
+    }
+  };
 
-// Obtener datos del usuario
-router.get("/:username", async (req, res) => {
-  try {
-    const user = await User.findOne({ username: req.params.username });
-    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
-    res.json(user);
-  } catch (err) {
-    res.status(500).json({ message: "Error al obtener los datos" });
-  }
-});
+  const handleSave = async (field, value, url) => {
+    if (value !== user[field]) {
+      try {
+        const response = await fetch(url, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ [field]: value })
+        });
 
-// Actualizar nombre de usuario
-router.patch("/:username/update/username", async (req, res) => {
-  try {
-    const { username } = req.body;
-    const user = await User.findOneAndUpdate(
-      { username: req.params.username },
-      { username },
-      { new: true }
-    );
-    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+        if (!response.ok) throw new Error(`Error al actualizar ${field}`);
 
-    res.json({ message: "Nombre de usuario actualizado", username: user.username });
-  } catch (err) {
-    res.status(500).json({ message: "Error al actualizar el nombre de usuario" });
-  }
-});
+        alert(`${field.charAt(0).toUpperCase() + field.slice(1)} actualizado correctamente`);
+        handleLogoutAndRedirect();
+      } catch (error) {
+        alert(error.message);
+      }
+    }
+  };
 
-// Actualizar correo electrónico
-router.patch("/:username/update/email", async (req, res) => {
-  try {
-    const { email } = req.body;
-    const user = await User.findOneAndUpdate(
-      { username: req.params.username },
-      { email },
-      { new: true }
-    );
-    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+  const handleProfileImageSave = async () => {
+    if (!profileImage) {
+      alert("No has seleccionado ninguna imagen.");
+      return;
+    }
 
-    res.json({ message: "Correo electrónico actualizado", email: user.email });
-  } catch (err) {
-    res.status(500).json({ message: "Error al actualizar el correo electrónico" });
-  }
-});
+    try {
+      const formData = new FormData();
+      formData.append("profileImage", profileImage);
 
-// Actualizar fecha de nacimiento
-router.patch("/:username/update/birthdate", async (req, res) => {
-  try {
-    const { birthDate } = req.body;
-    const user = await User.findOneAndUpdate(
-      { username: req.params.username },
-      { birthDate },
-      { new: true }
-    );
-    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+      // Enviar la imagen al backend con Multer y Sharp gestionando la imagen
+      const response = await fetch(`https://backend-magiotaglibro.onrender.com/api/userEditor/${user.username}/update/profile-image`, {
+        method: "PATCH",
+        body: formData,
+      });
 
-    res.json({ message: "Fecha de cumpleaños actualizada", birthDate: user.birthDate });
-  } catch (err) {
-    res.status(500).json({ message: "Error al actualizar la fecha de cumpleaños" });
-  }
-});
+      if (!response.ok) {
+        const errorMessage = await response.text();
+        throw new Error(`Error del backend: ${response.status} - ${errorMessage}`);
+      }
 
-// Actualizar foto de perfil
-router.patch("/:username/update/profile-image", upload, async (req, res) => {
-  try {
-    if (!req.file) return res.status(400).json({ message: "No se ha subido ninguna imagen" });
+      alert("Foto de perfil actualizada correctamente.");
+      handleLogoutAndRedirect();
+    } catch (error) {
+      if (error.message.includes("Error del backend")) {
+        alert(error.message);
+      } else {
+        alert(`Error al subir la imagen: ${error.message}`);
+      }
+    }
+  };
 
-    const filePath = path.join(__dirname, "../Uploads", req.file.filename);
-    await sharp(filePath).webp().toFile(filePath);
+  return (
+    <div>
+      <h3>Editar Perfil</h3>
+      <form>
+        <div>
+          <label>Nombre de usuario:</label>
+          <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} />
+          <button type="button" onClick={() => handleSave('username', username, `https://backend-magiotaglibro.onrender.com/api/userEditor/${user.username}/update/username`)}>Guardar nombre de usuario</button>
+        </div>
+        <div>
+          <label>Email:</label>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <button type="button" onClick={() => handleSave('email', email, `https://backend-magiotaglibro.onrender.com/api/userEditor/${user.username}/update/email`)}>Guardar correo electrónico</button>
+        </div>
+        <div>
+          <label>Fecha de nacimiento:</label>
+          <input type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} />
+          <button type="button" onClick={() => handleSave('birthday', birthday, `https://backend-magiotaglibro.onrender.com/api/userEditor/${user.username}/update/birthdate`)}>Guardar fecha de nacimiento</button>
+        </div>
+        <div>
+          <label>Lema:</label>
+          <input type="text" value={motto} onChange={(e) => setMotto(e.target.value)} />
+          <button type="button" onClick={() => handleSave('motto', motto, `https://backend-magiotaglibro.onrender.com/api/userEditor/${user.username}/update/motto`)}>Guardar lema</button>
+        </div>
+        <div>
+          <label>Imagen de perfil:</label>
+          <input type="file" accept="image/jpeg, image/png" onChange={handleImageChange} />
+          {imageError && <p style={{ color: "red" }}>{imageError}</p>}
+          {profileImagePreview && <div><h4>Previsualización de la imagen:</h4><img src={profileImagePreview} alt="Previsualización del perfil" style={{ width: "100px", height: "100px" }} /></div>}
+          <button type="button" onClick={handleProfileImageSave}>Guardar imagen de perfil</button>
+        </div>
+      </form>
+    </div>
+  );
+};
 
-    const user = await User.findOneAndUpdate(
-      { username: req.params.username },
-      { profileImage: `uploads/${req.file.filename}` },
-      { new: true }
-    );
-    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
-
-    res.json({ message: "Foto de perfil actualizada", profileImage: user.profileImage });
-  } catch (err) {
-    res.status(500).json({ message: "Error al actualizar la foto de perfil" });
-  }
-});
-
-// Actualizar lema
-router.patch("/:username/update/motto", async (req, res) => {
-  try {
-    const { motto } = req.body;
-    const user = await User.findOneAndUpdate(
-      { username: req.params.username },
-      { motto },
-      { new: true }
-    );
-    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
-
-    res.json({ message: "Lema actualizado correctamente", motto: user.motto });
-  } catch (err) {
-    res.status(500).json({ message: "Error al actualizar el lema" });
-  }
-});
-
-module.exports = router;
+export default ProfileEditor;
