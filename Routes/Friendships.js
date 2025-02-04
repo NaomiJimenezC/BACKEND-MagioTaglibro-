@@ -392,3 +392,4 @@ router.delete('/friends/remove/:username', async (req, res) => {
   }
 });
 
+module.exports = router;
