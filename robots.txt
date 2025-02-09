@@ -1,0 +1,10 @@
+User-agent: *
+Disallow: /login
+Disallow: /auth-test
+Disallow: /diaries/
+
+Allow: /
+Allow: /contact
+Allow: /user
+Allow: /diaries
+Allow: /sitemap.xml

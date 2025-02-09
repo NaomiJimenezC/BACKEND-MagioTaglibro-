@@ -5,6 +5,7 @@ const entriesRoutes = require('./Routes/Entries');
 const friendshipRoutes = require('./Routes/Friendships')
 const contactRoutes = require('./Routes/Contact')
 const userRoutes = require('./Routes/UserEditor')
+const path = require('path');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const {SitemapStream, streamToPromise} = require("sitemap");
@@ -49,6 +50,11 @@ app.get('/sitemap.xml', async (req, res) => {
     res.status(500).send("Error generating sitemap");
   }
 });
+
+app.get('/robots.txt', (req, res) => {
+  res.sendFile(path.join(__dirname, 'robots.txt'));
+});
+
 
 // Inicia el servidor
 app.listen(PORT, () => {
